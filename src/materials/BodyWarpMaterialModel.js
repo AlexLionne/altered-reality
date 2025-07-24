@@ -9,6 +9,7 @@ export default class extends ShaderMaterial {
                 uResolution:       { value: new THREE.Vector2() },
                 uDisplacementX:    { value: 0 },
                 uDisplacementY:    { value: 0 },
+                uDeformAmplitude:  { value: 1.0 },  // Nouvelle uniform pour l'amplitude des déformations
                 uNoiseScale:       { value: 10 },
                 uOpacity:          { value: 0.8 },
                 uCartoonLevels:    { value: 4.0 },
@@ -43,11 +44,12 @@ export default class extends ShaderMaterial {
           uniform vec2 uResolution;
           uniform float uDisplacementX;
           uniform float uDisplacementY;
+          uniform float uDeformAmplitude;
           uniform float uNoiseScale;
           uniform float uOpacity;
           uniform float uCartoonLevels;
-          uniform float uRoughness;
           uniform float uBrightness;
+          uniform float uRoughness;
           uniform float uReflectivity;
           uniform vec3 uLightDir;
           uniform float uLightIntensity;
@@ -106,7 +108,7 @@ export default class extends ShaderMaterial {
             vec2 uv   = frag / uResolution.x;
             float dx  = pattern(uv, uSeed);
             float dy  = pattern(uv + vec2(1.7,2.3), uSeed);
-            vec2 duv  = uv + vec2(dx * uDisplacementX, dy * uDisplacementY);
+            vec2 duv  = uv + vec2(dx * uDisplacementX, dy * uDisplacementY) * uDeformAmplitude;
 
             vec4 baseCol = vec4(0.0);
             if (uNumColors > 0) {

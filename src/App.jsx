@@ -98,6 +98,7 @@ export default function App() {
     // ——— États shader ———
     const [dx, setDx] = useState(1)
     const [dy, setDy] = useState(1)
+    const [deformAmplitude, setDeformAmplitude] = useState(1)  // Nouvel état pour l'amplitude
     const [noiseScale, setNoiseScale] = useState(1.9)
     const [opacity, setOpacity] = useState(1)
     const [cartoonLvls, setCartoonLvls] = useState(50)
@@ -120,6 +121,7 @@ export default function App() {
         // Shader controls
         gui.add({dx}, 'dx', 0, 1, 0.01).name('Dépl X').onChange(setDx)
         gui.add({dy}, 'dy', 0, 1, 0.01).name('Dépl Y').onChange(setDy)
+        gui.add({deformAmplitude}, 'deformAmplitude', 0, 2, 0.01).name('Ampl. Déform').onChange(setDeformAmplitude)  // Nouveau contrôle GUI
         gui.add({noiseScale}, 'noiseScale', 1.9, 2, 0.01).name('Échelle bruit').onChange(setNoiseScale)
         gui.add({opacity}, 'opacity', 0, 1, 0.01).name('Opacité').onChange(setOpacity)
         gui.add({cartoonLvls}, 'cartoonLvls', 50, 50, 1).name('Cartoon Lvls').onChange(setCartoonLvls)
@@ -171,18 +173,19 @@ export default function App() {
                 const v = matRef.current.uniforms
                 const w = matRef3.current.uniforms
 
+                /*
                 const elapsed = isExportingVideo.current
-                    ? exportBaseTime.current + exportFrame.current / fps
-                    : performance.now() / 1000
 
+                ? exportBaseTime.current + exportFrame.current / fps
+                : performance.now() / 1000
                 u.uTime.value = elapsed
                 v.uTime.value = elapsed
-                //v.uTime.value = timeOffset.current
-                //v.uTime.value = timeOffset.current
+                */
 
                 u.uResolution.value.set(state.size.width, state.size.height)
                 u.uDisplacementX.value = dx
                 u.uDisplacementY.value = dy
+                u.uDeformAmplitude.value = deformAmplitude  // Mise à jour de la nouvelle uniform
                 u.uNoiseScale.value = noiseScale * 2 //* 4
                 u.uOpacity.value = opacity
                 u.uCartoonLevels.value = cartoonLvls
@@ -198,6 +201,7 @@ export default function App() {
                 v.uResolution.value.set(state.size.width, state.size.height)
                 v.uDisplacementX.value = dx
                 v.uDisplacementY.value = dy
+                v.uDeformAmplitude.value = deformAmplitude  // Mise à jour de la nouvelle uniform
                 v.uNoiseScale.value = noiseScale * 1.5
                 v.uOpacity.value = opacity
                 v.uCartoonLevels.value = cartoonLvls
@@ -218,6 +222,7 @@ export default function App() {
                 w.uResolution.value.set(state.size.width, state.size.height)
                 w.uDisplacementX.value = dx
                 w.uDisplacementY.value = dy
+                w.uDeformAmplitude.value = deformAmplitude  // Mise à jour de la nouvelle uniform
                 w.uNoiseScale.value = noiseScale
                 w.uOpacity.value = opacity
                 w.uCartoonLevels.value = 1
@@ -313,7 +318,7 @@ export default function App() {
         if (!gl || !scene || !camera) return
 
         const canvasSize = gl.domElement.getBoundingClientRect()
-        const factor = 20
+        const factor = 10
         const width = Math.floor(canvasSize.width * factor)
         const height = Math.floor(canvasSize.height * factor)
         const renderTarget = new THREE.WebGLRenderTarget(width, height)
