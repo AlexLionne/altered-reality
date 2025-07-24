@@ -51,6 +51,9 @@ export default function App() {
             {id: 3, value: getRandomColor(), intensity: 2},
             {id: 4, value: getRandomColor(), intensity: 2},
             {id: 5, value: getRandomColor(), intensity: 2},
+            {id: 5, value: getRandomColor(), intensity: 2},
+            {id: 5, value: getRandomColor(), intensity: 2},
+            {id: 5, value: getRandomColor(), intensity: 2},
         ],
         intensity: 2,
         level: 2,
@@ -121,7 +124,7 @@ export default function App() {
         // Shader controls
         gui.add({dx}, 'dx', 0, 1, 0.01).name('Dépl X').onChange(setDx)
         gui.add({dy}, 'dy', 0, 1, 0.01).name('Dépl Y').onChange(setDy)
-        gui.add({deformAmplitude}, 'deformAmplitude', 0, 2, 0.01).name('Ampl. Déform').onChange(setDeformAmplitude)  // Nouveau contrôle GUI
+        gui.add({deformAmplitude}, 'deformAmplitude', 0, 10, 0.01).name('Ampl. Déform').onChange(setDeformAmplitude)  // Nouveau contrôle GUI
         gui.add({noiseScale}, 'noiseScale', 1.9, 2, 0.01).name('Échelle bruit').onChange(setNoiseScale)
         gui.add({opacity}, 'opacity', 0, 1, 0.01).name('Opacité').onChange(setOpacity)
         gui.add({cartoonLvls}, 'cartoonLvls', 50, 50, 1).name('Cartoon Lvls').onChange(setCartoonLvls)
@@ -130,8 +133,9 @@ export default function App() {
         gui.add({brightness}, 'brightness', 0, 1, 0.01)
             .name('Éclaircir')
             .onChange(setBrightness)
-
-        gui.add({runExport}, 'runExport').name('Exporter')
+        gui.add({randomizeColors}, 'randomizeColors').name('Random')
+        gui.add({exportSceneAsJPG}, 'exportSceneAsJPG').name('Exporter')
+        gui.add({runExport}, 'runExport').name('Exporter 100')
         gui.add({startExportVideo}, 'startExportVideo').name('Video Exporter')
 
         // Liquide folder
@@ -181,6 +185,8 @@ export default function App() {
                 u.uTime.value = elapsed
                 v.uTime.value = elapsed
                 */
+                u.uTime.value = exportBaseTime.current
+                v.uTime.value = exportBaseTime.current
 
                 u.uResolution.value.set(state.size.width, state.size.height)
                 u.uDisplacementX.value = dx
@@ -276,6 +282,8 @@ export default function App() {
     const cameraRef = useRef()
     const imageCount = useRef(0)
     const randomizeColors = () => {
+        exportBaseTime.current = Math.random() * 100000
+        setDeformAmplitude(Math.random() * 10)
         setLiquid(l => ({
             ...l,
             colors: [
@@ -287,20 +295,19 @@ export default function App() {
                 }))]
         }))
     }
+
     const runExport = () => {
         const interval = setInterval(() => {
             if (imageCount.current >= 100) {
                 clearInterval(interval)
                 return
             }
-
-
             setTimeout(() => {
                 exportSceneAsJPG()
                 timeOffset.current = Math.floor(Math.random() * 10000)
                 randomizeColors()
                 imageCount.current++
-            }, 1000)
+            }, 5000)
 
         }, 10000)
 
@@ -397,7 +404,7 @@ export default function App() {
 
         // Résolution cible
         const canvasSize = gl.domElement.getBoundingClientRect()
-        const factor = 20 // qualité x10
+        const factor = 15 // qualité x10
         const width = Math.floor(canvasSize.width * factor)
         const height = Math.floor(canvasSize.height * factor)
 
@@ -452,7 +459,7 @@ export default function App() {
         const dataURL = canvas.toDataURL('image/jpeg', 1.0)
         const link = document.createElement('a')
         link.href = dataURL
-        link.download = 'scene-4k.jpg'
+        link.download = `${Math.random().toString().slice(2, 6)}.jpg`
         link.click()
 
         // Nettoyage
@@ -465,7 +472,7 @@ export default function App() {
 
 
     return (
-        <div style={{width: 400, height: 400, margin: 'auto', backgroundColor: 'black'}}>
+        <div style={{width: 600, height: 600, margin: 'auto', backgroundColor: 'black'}}>
             <Canvas
                 onCreated={({gl, scene, camera}) => {
                     glRef.current = gl

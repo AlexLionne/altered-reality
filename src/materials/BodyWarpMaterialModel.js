@@ -19,8 +19,8 @@ export default class extends ShaderMaterial {
                 uLightIntensity:   { value: 1 },       // Nouvelle uniform pour réduire l'intensité
                 uEnvMap:           { value: null },
                 uCamPos:           { value: new THREE.Vector3() },
-                uColors:           { value: Array(5).fill(new THREE.Vector3()) },
-                uColorIntensities: { value: Array(5).fill(0) },
+                uColors:           { value: Array(8).fill(new THREE.Vector3()) },
+                uColorIntensities: { value: Array(8).fill(0) },
                 uNumColors:        { value: 1 },
                 uIntensity:        { value: 0 },
                 uLevel:            { value: 0 },
