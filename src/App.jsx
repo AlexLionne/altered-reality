@@ -124,7 +124,7 @@ export default function App() {
         // Shader controls
         gui.add({dx}, 'dx', 0, 1, 0.01).name('Dépl X').onChange(setDx)
         gui.add({dy}, 'dy', 0, 1, 0.01).name('Dépl Y').onChange(setDy)
-        gui.add({deformAmplitude}, 'deformAmplitude', 0, 10, 0.01).name('Ampl. Déform').onChange(setDeformAmplitude)  // Nouveau contrôle GUI
+        gui.add({deformAmplitude}, 'deformAmplitude', 0, 2, 0.01).name('Ampl. Déform').onChange(setDeformAmplitude)  // Nouveau contrôle GUI
         gui.add({noiseScale}, 'noiseScale', 1.9, 2, 0.01).name('Échelle bruit').onChange(setNoiseScale)
         gui.add({opacity}, 'opacity', 0, 1, 0.01).name('Opacité').onChange(setOpacity)
         gui.add({cartoonLvls}, 'cartoonLvls', 50, 50, 1).name('Cartoon Lvls').onChange(setCartoonLvls)
@@ -283,7 +283,6 @@ export default function App() {
     const imageCount = useRef(0)
     const randomizeColors = () => {
         exportBaseTime.current = Math.random() * 100000
-        setDeformAmplitude(Math.random() * 10)
         setLiquid(l => ({
             ...l,
             colors: [
