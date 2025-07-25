@@ -60,6 +60,8 @@ export default function App() {
         seed: 0,
         yBias: 10,
     })
+    const [pixelSize, setPixelSize] = useState(0)
+
     const addColor = () => {
         setLiquid(l => {
             if (l.colors.length >= 5) return l
@@ -133,6 +135,8 @@ export default function App() {
         gui.add({brightness}, 'brightness', 0, 1, 0.01)
             .name('Éclaircir')
             .onChange(setBrightness)
+        gui.add({ pixelSize }, 'pixelSize', 0, 100, 1).name('Pixel Size').onChange(setPixelSize)
+
         gui.add({randomizeColors}, 'randomizeColors').name('Random')
         gui.add({exportSceneAsJPG}, 'exportSceneAsJPG').name('Exporter')
         gui.add({runExport}, 'runExport').name('Exporter 100')
@@ -187,6 +191,10 @@ export default function App() {
                 */
                 u.uTime.value = exportBaseTime.current
                 v.uTime.value = exportBaseTime.current
+
+                u.uPixelSize.value = pixelSize
+                v.uPixelSize.value = pixelSize
+                w.uPixelSize.value = pixelSize
 
                 u.uResolution.value.set(state.size.width, state.size.height)
                 u.uDisplacementX.value = dx
@@ -261,7 +269,7 @@ export default function App() {
                     geometry={nodes3.object_1.geometry}
                     scale={0.11}
                     rotation={[Math.PI / 2, 0, Math.PI]}
-                    position={[0, -5.6, -0.15]}
+                    position={[0, -5.6, -0.2]}
                 >
                     <bodyWarpMaterialModel ref={matRef3}/>
                 </mesh>
@@ -471,7 +479,7 @@ export default function App() {
 
 
     return (
-        <div style={{width: 600, height: 600, margin: 'auto', backgroundColor: 'black'}}>
+        <div style={{width: 600, height: 600, margin: 'auto', backgroundColor: 'blue'}}>
             <Canvas
                 onCreated={({gl, scene, camera}) => {
                     glRef.current = gl
