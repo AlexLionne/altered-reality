@@ -20,14 +20,16 @@ export default class extends ShaderMaterial {
                 uLightIntensity:   { value: 1 },
                 uEnvMap:           { value: null },
                 uCamPos:           { value: new THREE.Vector3() },
-                uColors:           { value: Array(8).fill(new THREE.Vector3()) },
-                uColorIntensities: { value: Array(8).fill(0) },
+                uColors:           { value: Array(5).fill(new THREE.Vector3()) },
+                uColorIntensities: { value: Array(5).fill(0) },
                 uNumColors:        { value: 1 },
                 uIntensity:        { value: 0 },
                 uLevel:            { value: 0 },
                 uSeed:             { value: 0 },
                 uYBias:            { value: 0 },
-                uPixelSize:        { value: 0 }, // 👈 nouveau
+                uPixelSize:        { value: 0 },
+                uImages: { value: Array(8).fill(null) },
+                uUseImages: { value: Array(8).fill(false) },
             },
             vertexShader: `
                 varying vec2 vUv;
@@ -68,6 +70,8 @@ export default class extends ShaderMaterial {
                 varying vec2 vUv;
                 varying vec3 vNormal;
                 varying vec3 vWorldPos;
+                uniform sampler2D uImages[5];
+                uniform bool uUseImages[5];
 
                 float rand(vec3 p) {
                     return fract(sin(dot(p, vec3(12.9898,78.233,45.5432))) * 43758.5453);

@@ -9,8 +9,9 @@ import {useGUI} from "./hooks/useGUI.js"
 // 1) Extend deux shaders : modèle (avec éclairage/réflection) et fond (pattern seul)
 extend({
     WarpMaterialModel,
-    BodyWarpMaterialModel
+    BodyWarpMaterialModel,
 })
+
 const getRandomColor = () => {
     const h = Math.floor(Math.random() * 360);
     const s = 100;
@@ -47,12 +48,9 @@ export default function App() {
     const [liquid, setLiquid] = useState({
         colors: [
             {id: 1, value: "#000", intensity: 2},
-            {id: 2, value: "#000", intensity: 2},
+            {id: 2, value: getRandomColor(), intensity: 2},
             {id: 3, value: getRandomColor(), intensity: 2},
             {id: 4, value: getRandomColor(), intensity: 2},
-            {id: 5, value: getRandomColor(), intensity: 2},
-            {id: 5, value: getRandomColor(), intensity: 2},
-            {id: 5, value: getRandomColor(), intensity: 2},
             {id: 5, value: getRandomColor(), intensity: 2},
         ],
         intensity: 2,
@@ -103,7 +101,7 @@ export default function App() {
     // ——— États shader ———
     const [dx, setDx] = useState(1)
     const [dy, setDy] = useState(1)
-    const [deformAmplitude, setDeformAmplitude] = useState(1)  // Nouvel état pour l'amplitude
+    const [deformAmplitude, setDeformAmplitude] = useState(0.63)  // Nouvel état pour l'amplitude
     const [noiseScale, setNoiseScale] = useState(1.9)
     const [opacity, setOpacity] = useState(1)
     const [cartoonLvls, setCartoonLvls] = useState(50)
@@ -115,7 +113,6 @@ export default function App() {
     const matRef2 = useRef()
     const matRef3 = useRef()
     const timeOffset = useRef(300)
-
     // export
     const isExportingVideo = useRef(false)
     const exportBaseTime = useRef(0)
@@ -135,7 +132,7 @@ export default function App() {
         gui.add({brightness}, 'brightness', 0, 1, 0.01)
             .name('Éclaircir')
             .onChange(setBrightness)
-        gui.add({ pixelSize }, 'pixelSize', 0, 100, 1).name('Pixel Size').onChange(setPixelSize)
+        gui.add({ pixelSize }, 'pixelSize', 0, 8, 1).name('Pixel Size').onChange(setPixelSize)
 
         gui.add({randomizeColors}, 'randomizeColors').name('Random')
         gui.add({exportSceneAsJPG}, 'exportSceneAsJPG').name('Exporter')
@@ -170,17 +167,20 @@ export default function App() {
         const {camera} = useThree()
         const meshRef = useRef()
         const mesh2Ref = useRef()
+        const backgroundRef = useRef()
+        const matRefBackground = useRef() // Ref pour le matériau du fond
+
         const {nodes} = useGLTF('/model.glb')
         const {nodes: nodes2} = useGLTF('/untitled.glb')
         const {nodes: nodes3} = useGLTF('/skull.glb')
 
         useFrame((state, delta) => {
             // Fond pattern
-            if (matRef2.current && matRef.current && matRef3.current) {
+            if (matRef2.current && matRef.current && matRef3.current && matRefBackground.current) {
                 const u = matRef2.current.uniforms
                 const v = matRef.current.uniforms
                 const w = matRef3.current.uniforms
-
+                const bg = matRefBackground.current.uniforms // Uniforms du fond
                 /*
                 const elapsed = isExportingVideo.current
 
@@ -252,11 +252,38 @@ export default function App() {
                 w.uSeed.value = liquid.seed
                 w.uYBias.value = liquid.yBias
 
+                //bg.uTime.value += delta
+                bg.uPixelSize.value = pixelSize
+
+
+                bg.uResolution.value.set(state.size.width, state.size.height)
+                bg.uDisplacementX.value = dx
+                bg.uDisplacementY.value = dy
+                bg.uDeformAmplitude.value = deformAmplitude / 2 // Mise à jour de la nouvelle uniform
+                bg.uNoiseScale.value = noiseScale //* 4
+                bg.uOpacity.value = opacity
+                bg.uCartoonLevels.value = cartoonLvls
+                bg.uColors.value = liquid.colors.map(c => new THREE.Vector3(...new THREE.Color(c.value).toArray()))
+                bg.uColorIntensities.value = liquid.colors.map(c => c.intensity)
+                bg.uNumColors.value = liquid.colors.length
+                bg.uIntensity.value = liquid.intensity
+                bg.uLevel.value = liquid.level
+                bg.uSeed.value = liquid.seed
+                bg.uYBias.value = liquid.yBias
             }
         })
 
         return (
             <group>
+                <mesh
+                    ref={backgroundRef}
+                    rotation={[0, Math.PI, 0]}
+                    position={[0, 0, 4]} // Placé en arrière
+                    scale={[10, 10, 1]} // Grand pour couvrir le champ de la caméra
+                >
+                    <planeGeometry args={[1, 1]}/>
+                    <warpMaterialModel ref={matRefBackground}/>
+                </mesh>
                 <mesh
                     ref={mesh2Ref}
                     geometry={nodes2.Beanie_Outfit_V01.geometry}
@@ -295,8 +322,7 @@ export default function App() {
             ...l,
             colors: [
                 {id: 1, value: "#000", intensity: 2},
-                {id: 2, value: "#000", intensity: 2},
-                ...l.colors.slice(2, l.colors.length).map(c => ({
+                ...l.colors.slice(1, l.colors.length).map(c => ({
                     ...c,
                     value: getRandomColor()
                 }))]
@@ -479,7 +505,7 @@ export default function App() {
 
 
     return (
-        <div style={{width: 600, height: 600, margin: 'auto', backgroundColor: 'blue'}}>
+        <div style={{width: 400, height: 400, margin: 'auto', backgroundColor: 'black'}}>
             <Canvas
                 onCreated={({gl, scene, camera}) => {
                     glRef.current = gl
