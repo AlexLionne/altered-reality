@@ -4,12 +4,17 @@ import {OrbitControls, useGLTF} from '@react-three/drei'
 import * as THREE from 'three'
 import WarpMaterialModel from "./materials/WarpMaterialModel.js"
 import BodyWarpMaterialModel from "./materials/BodyWarpMaterialModel.js"
+import WarpMaterialBackground from "./materials/WarpMaterialBackground.js"
 import {useGUI} from "./hooks/useGUI.js"
+import NightSkyMaterial from "./materials/NightSkyMaterial.js";
+import {settings} from "./settings/index.js";
 
 // 1) Extend deux shaders : modèle (avec éclairage/réflection) et fond (pattern seul)
 extend({
     WarpMaterialModel,
+    WarpMaterialBackground,
     BodyWarpMaterialModel,
+    NightSkyMaterial
 })
 
 const getRandomColor = () => {
@@ -47,11 +52,8 @@ export default function App() {
     // ——— États liquides & couleurs ———
     const [liquid, setLiquid] = useState({
         colors: [
-            {id: 1, value: "#000", intensity: 2},
-            {id: 2, value: getRandomColor(), intensity: 2},
-            {id: 3, value: getRandomColor(), intensity: 2},
-            {id: 4, value: getRandomColor(), intensity: 2},
-            {id: 5, value: getRandomColor(), intensity: 2},
+            {id: 0, value: "#000", intensity: 2},
+            ...settings.slice(0, 5)
         ],
         intensity: 2,
         level: 2,
@@ -104,10 +106,14 @@ export default function App() {
     const [deformAmplitude, setDeformAmplitude] = useState(0.63)  // Nouvel état pour l'amplitude
     const [noiseScale, setNoiseScale] = useState(1.9)
     const [opacity, setOpacity] = useState(1)
-    const [cartoonLvls, setCartoonLvls] = useState(50)
+    const [cartoonLvls, setCartoonLvls] = useState(100)
     const [roughness, setRoughness] = useState(1)
     const [reflectivity, setReflectivity] = useState(0)
     const [brightness, setBrightness] = useState(0)
+    const [particlesNo, setParticlesNo] = useState(100)
+
+    const [mirrorX, setMirrorX] = useState(false)
+    const [mirrorY, setMirrorY] = useState(false)
 
     const matRef = useRef()
     const matRef2 = useRef()
@@ -126,14 +132,18 @@ export default function App() {
         gui.add({deformAmplitude}, 'deformAmplitude', 0, 2, 0.01).name('Ampl. Déform').onChange(setDeformAmplitude)  // Nouveau contrôle GUI
         gui.add({noiseScale}, 'noiseScale', 1.9, 2, 0.01).name('Échelle bruit').onChange(setNoiseScale)
         gui.add({opacity}, 'opacity', 0, 1, 0.01).name('Opacité').onChange(setOpacity)
-        gui.add({cartoonLvls}, 'cartoonLvls', 50, 50, 1).name('Cartoon Lvls').onChange(setCartoonLvls)
+        gui.add({cartoonLvls}, 'cartoonLvls', 0, 100, 1).name('Cartoon Lvls').onChange(setCartoonLvls)
         gui.add({roughness}, 'roughness', 0, 1, 0.01).name('Roughness').onChange(setRoughness)
         gui.add({reflectivity}, 'reflectivity', 0, 1, 0.01).name('Reflectivity').onChange(setReflectivity)
         gui.add({brightness}, 'brightness', 0, 1, 0.01)
             .name('Éclaircir')
             .onChange(setBrightness)
-        gui.add({ pixelSize }, 'pixelSize', 0, 8, 1).name('Pixel Size').onChange(setPixelSize)
-
+        gui.add({pixelSize}, 'pixelSize', 0, 8, 1).name('Pixel Size').onChange(setPixelSize)
+        gui.add({particlesNo}, 'particlesNo', 0, 100, 1).name('Nb particules').onChange(v => {
+            setParticlesNo(v)
+        });
+        gui.add({mirrorX}, 'mirrorX').name('Miroir X').onChange(setMirrorX)
+        gui.add({mirrorY}, 'mirrorY').name('Miroir Y').onChange(setMirrorY)
         gui.add({randomizeColors}, 'randomizeColors').name('Random')
         gui.add({exportSceneAsJPG}, 'exportSceneAsJPG').name('Exporter')
         gui.add({runExport}, 'runExport').name('Exporter 100')
@@ -169,7 +179,6 @@ export default function App() {
         const mesh2Ref = useRef()
         const backgroundRef = useRef()
         const matRefBackground = useRef() // Ref pour le matériau du fond
-
         const {nodes} = useGLTF('/model.glb')
         const {nodes: nodes2} = useGLTF('/untitled.glb')
         const {nodes: nodes3} = useGLTF('/skull.glb')
@@ -196,11 +205,14 @@ export default function App() {
                 v.uPixelSize.value = pixelSize
                 w.uPixelSize.value = pixelSize
 
+                u.uMirrorX.value = mirrorX
+                u.uMirrorY.value = mirrorY
+
                 u.uResolution.value.set(state.size.width, state.size.height)
                 u.uDisplacementX.value = dx
                 u.uDisplacementY.value = dy
                 u.uDeformAmplitude.value = deformAmplitude  // Mise à jour de la nouvelle uniform
-                u.uNoiseScale.value = noiseScale * 2 //* 4
+                u.uNoiseScale.value = noiseScale * 1.5 //* 4
                 u.uOpacity.value = opacity
                 u.uCartoonLevels.value = cartoonLvls
                 u.uColors.value = liquid.colors.map(c => new THREE.Vector3(...new THREE.Color(c.value).toArray()))
@@ -253,23 +265,23 @@ export default function App() {
                 w.uYBias.value = liquid.yBias
 
                 //bg.uTime.value += delta
-                bg.uPixelSize.value = pixelSize
-
-
-                bg.uResolution.value.set(state.size.width, state.size.height)
-                bg.uDisplacementX.value = dx
-                bg.uDisplacementY.value = dy
-                bg.uDeformAmplitude.value = deformAmplitude / 2 // Mise à jour de la nouvelle uniform
-                bg.uNoiseScale.value = noiseScale //* 4
-                bg.uOpacity.value = opacity
-                bg.uCartoonLevels.value = cartoonLvls
-                bg.uColors.value = liquid.colors.map(c => new THREE.Vector3(...new THREE.Color(c.value).toArray()))
-                bg.uColorIntensities.value = liquid.colors.map(c => c.intensity)
-                bg.uNumColors.value = liquid.colors.length
-                bg.uIntensity.value = liquid.intensity
-                bg.uLevel.value = liquid.level
-                bg.uSeed.value = liquid.seed
-                bg.uYBias.value = liquid.yBias
+                //bg.uPixelSize.value = pixelSize
+//
+//
+                //bg.uResolution.value.set(state.size.width, state.size.height)
+                //bg.uDisplacementX.value = dx
+                //bg.uDisplacementY.value = dy
+                //bg.uDeformAmplitude.value = deformAmplitude / 2 // Mise à jour de la nouvelle uniform
+                //bg.uNoiseScale.value = noiseScale //* 4
+                //bg.uOpacity.value = 0
+                //bg.uCartoonLevels.value = 100
+                //bg.uColors.value = liquid.colors.map(c => new THREE.Vector3(...new THREE.Color(c.value).toArray()))
+                //bg.uColorIntensities.value = liquid.colors.map(c => c.intensity)
+                //bg.uNumColors.value = liquid.colors.length
+                //bg.uIntensity.value = liquid.intensity
+                //bg.uLevel.value = liquid.level
+                //bg.uSeed.value = liquid.seed
+                //bg.uYBias.value = liquid.yBias
             }
         })
 
@@ -278,11 +290,11 @@ export default function App() {
                 <mesh
                     ref={backgroundRef}
                     rotation={[0, Math.PI, 0]}
-                    position={[0, 0, 4]} // Placé en arrière
+                    position={[0, 0, 5]} // Placé en arrière
                     scale={[10, 10, 1]} // Grand pour couvrir le champ de la caméra
                 >
                     <planeGeometry args={[1, 1]}/>
-                    <warpMaterialModel ref={matRefBackground}/>
+                    <warpMaterialBackground ref={matRefBackground}/>
                 </mesh>
                 <mesh
                     ref={mesh2Ref}
@@ -303,7 +315,7 @@ export default function App() {
                 <mesh
                     ref={meshRef}
                     geometry={nodes.mask.geometry}
-                    position={[0.0225, 0, 0]}
+                    position={[0, 0, 0]}
                     rotation={[0, 0, 0]}
                 >
                     <warpMaterialModel ref={matRef}/>
@@ -505,7 +517,7 @@ export default function App() {
 
 
     return (
-        <div style={{width: 400, height: 400, margin: 'auto', backgroundColor: 'black'}}>
+        <div style={{width: 800, height: 800, margin: 'auto', backgroundColor: 'black'}}>
             <Canvas
                 onCreated={({gl, scene, camera}) => {
                     glRef.current = gl
@@ -515,9 +527,9 @@ export default function App() {
                 orthographic
                 camera={{
                     left: -2.7,
-                    right: 3,
+                    right: 2.7,
                     top: 2,
-                    bottom: -2.5,
+                    bottom: -2.2,
                     near: 0.1,
                     far: 100,
                     position: [0, 0, -2],

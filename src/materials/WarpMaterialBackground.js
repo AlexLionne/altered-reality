@@ -1,144 +1,156 @@
-// WarpMaterialModel.js
-import {ShaderMaterial} from "three";
+import { ShaderMaterial } from "three";
 import * as THREE from "three";
 
 export default class extends ShaderMaterial {
     constructor() {
         super({
             uniforms: {
-                uTime:             { value: 0 },
-                uResolution:       { value: new THREE.Vector2() },
-                uDisplacementX:    { value: 0 },
-                uDisplacementY:    { value: 0 },
-                uNoiseScale:       { value: 10 },
-                uOpacity:          { value: 0.8 },
-                uCartoonLevels:    { value: 4.0 },
-                uRoughness:        { value: 0.5 },
-                uReflectivity:     { value: 0.5 },
-                uLightDir:         { value: new THREE.Vector3(0,10,10).normalize() },
-                uLightIntensity:   { value: 1 },
-                uEnvMap:           { value: null },
-                uCamPos:           { value: new THREE.Vector3() },
-                uColors:           { value: Array(5).fill(new THREE.Vector3()) },
-                uColorIntensities: { value: Array(5).fill(0) },
-                uNumColors:        { value: 0 },
-                uIntensity:        { value: 0 },
-                uLevel:            { value: 0 },
-                uSeed:             { value: 0 },
-                uYBias:            { value: 0 },
-                uBrightness:       { value: 0.0 },
+                iTime: { value: 10 },
+                iResolution: { value: new THREE.Vector3() }
             },
             vertexShader: `
-          varying vec2 vUv;
-          varying vec3 vNormal;
-          varying vec3 vWorldPos;
-          void main() {
-            vUv = uv;
-            vNormal = normalize(normalMatrix * normal);
-            vWorldPos = (modelMatrix * vec4(position,1.0)).xyz;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
-          }
-        `,
+                void main() {
+                    gl_Position = vec4(position.xy, 0.0, 1.0);
+                }
+            `,
             fragmentShader: `
-          uniform float uTime;
-          uniform vec2 uResolution;
-          uniform float uDisplacementX;
-          uniform float uDisplacementY;
-          uniform float uNoiseScale;
-          uniform float uOpacity;
-          uniform float uCartoonLevels;
-          uniform float uRoughness;
-          uniform float uBrightness;
-          uniform float uReflectivity;
-          uniform vec3 uLightDir;
-          uniform float uLightIntensity;
-          uniform samplerCube uEnvMap;
-          uniform vec3 uCamPos;
-          uniform vec3 uColors[5];
-          uniform float uColorIntensities[5];
-          uniform int uNumColors;
-          uniform float uIntensity;
-          uniform float uLevel;
-          uniform float uSeed;
-          uniform float uYBias;
-          varying vec2 vUv;
-          varying vec3 vNormal;
-          varying vec3 vWorldPos;
-    
-          float rand(vec3 p) {
-            return fract(sin(dot(p, vec3(12.9898,78.233,45.5432))) * 43758.5453);
-          }
-          float noise(vec2 p, float s) {
-            vec2 ip = floor(p), u = fract(p);
-            u = u*u*(3.0-2.0*u);
-            float a = rand(vec3(ip,s));
-            float b = rand(vec3(ip + vec2(1.0,0.0),s));
-            float c = rand(vec3(ip + vec2(0.0,1.0),s));
-            float d = rand(vec3(ip + vec2(1.0,1.0),s));
-            float m1 = mix(a,b,u.x), m2 = mix(c,d,u.x);
-            return mix(m1,m2,u.y) * mix(m1,m2,u.y);
-          }
-          const mat2 mtx = mat2(1.2,0.0,-0.3,0.8);
-          float fbm(vec2 p, float s) {
-            p *= uNoiseScale;
-            float f = 0.0;
-            f += 0.5   * noise(p + uTime*0.1, s); p = mtx * p * 2.02;
-            f += 0.25  * noise(p, s);            p = mtx * p * 2.01;
-            f += 0.125 * noise(p, s);            p = mtx * p * 2.03;
-            f += 0.0625* noise(p + sin(uTime)*0.5, s);
-            return f / 0.9375;
-          }
-          float pattern(vec2 p, float s) {
-            return fbm(p + fbm(p + fbm(p + fbm(p + fbm(p+ fbm(p + fbm(p+ fbm(p + fbm(p+ fbm(p + fbm(p, s), s), s), s), s), s), s), s);
-          }
-          vec3 colormapColor(float sh) {
-            float x = clamp(sh / max(uIntensity, 0.001), 0.0, 1.0);
-            if (uNumColors < 2) return uColors[0] * uColorIntensities[0];
-            float step = 1.0 / float(uNumColors - 1);
-            int idx = int(floor(x / step));
-            float t = (x - float(idx) * step) / step;
-            idx = clamp(idx, 0, uNumColors - 2);
-            vec3 c = mix(uColors[idx], uColors[idx+1], t);
-            float i = mix(uColorIntensities[idx], uColorIntensities[idx+1], t);
-            return c * i;
-          }
+                uniform float iTime;
+                uniform vec3 iResolution;
 
-          void main() {
-            vec2 frag = vUv * uResolution;
-            vec2 uv   = frag / uResolution.x;
-            float dx  = pattern(uv, uSeed);
-            float dy  = pattern(uv + vec2(1.7,2.3), uSeed);
-            vec2 duv  = uv + vec2(dx * uDisplacementX, dy * uDisplacementY);
+                #define PI 3.141592
+                #define TWOPI (2.0*PI)
 
-            vec4 baseCol = vec4(0.0);
-            if (uNumColors > 0) {
-              float sh = pattern(duv, uSeed) * uIntensity;
-              sh = floor(sh * uCartoonLevels) / uCartoonLevels;
-              vec3 rgb = colormapColor(sh);
-              float yF = vUv.y * 2.0 * uYBias;
-              float a  = smoothstep(0.4,0.6, sh + uLevel + yF);
-              baseCol = mix(vec4(0.0), vec4(rgb,1.0), a);
-            }
+                vec3 palette( float t ) {
+                    vec3 a = vec3(0.5, 0.6, 0.5);
+                    vec3 b = vec3(0.5, 0.5, 0.85);
+                    vec3 c = vec3(1.0, 1.0, 1.0);
+                    vec3 d = vec3(0.756,0.48,0.557);
 
-            // lighting + reflection
-            vec3 N    = normalize(vNormal);
-            vec3 L    = normalize(uLightDir);
-            float lam = max(dot(N, L), 0.0) * uLightIntensity;
-            float shin= mix(8.0,64.0,1.0 - uRoughness);
-            float spec= pow(lam, shin) * uLightIntensity;
+                    return a + b*cos( TWOPI*(c*t+d) );
+                }
+                // Full-Screen Molten Goo
+                // Lava-like full-screen dynamic blob field
+                // Generated by ChatGPT 4o on July 27, 2025
 
-            vec3 V    = normalize(uCamPos - vWorldPos);
-            vec3 R    = reflect(-V, N);
-            vec3 env  = textureCube(uEnvMap, R).rgb;
+                float hash(vec2 p) {
+                    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+                }
 
-            vec3 lit   = baseCol.rgb * lam + spec * (1.0 - uRoughness);
-            vec3 color = mix(lit, env, uReflectivity);
-            color = mix(color, vec3(1.0), uBrightness);
-            gl_FragColor = vec4(color, uOpacity);
-          }
-        `,
+                float noise(vec2 p) {
+                    vec2 i = floor(p);
+                    vec2 f = fract(p);
+                    vec2 u = f*f*(3.0 - 2.0*f);
+                    return mix(mix(hash(i + vec2(0.0, 0.0)), hash(i + vec2(1.0, 0.0)), u.x),
+                               mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
+                }
+
+                float fbm(vec2 p) {
+                    float v = 0.0;
+                    float a = 0.5;
+                    for (int i = 0; i < 5; i++) {
+                        v += a * noise(p);
+                        p *= 2.0;
+                        a *= 0.5;
+                    }
+                    return v;
+                }
+
+                #define S(v) smoothstep(5.0 / iResolution.y, 0.0, v)           // AA draw
+                  float happy_star(vec2 uv, float anim)
+                {
+                    uv = abs(uv);
+                    vec2 pos = min(uv.xy/uv.yx, anim);
+                    float p = (2.0 - pos.x - pos.y);
+                    return (2.0+p*(p*p-1.5)) / (uv.x+uv.y);      
+                }
+                 
+                vec3 lavaPalette(float t) {
+                    vec3 dark = vec3(0.078, 0.004, 0.004);    // #140101
+                    vec3 mid  = vec3(0.8, 0.3, 0.0);          // orange (corrected from 1.0 assuming typo)
+                    vec3 bright = vec3(0.996, 0.859, 0.553);  // #FEDB8D
+
+                    if (t < 0.5)
+                        return mix(dark, mid, t * 2.0);
+                    else
+                        return mix(mid, bright, (t - 0.5) * 2.0);
+                }
+
+                void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
+                    vec2 r = iResolution.xy;
+                    vec2 uv = (2.0 * fragCoord - r) / min(r.x, r.y);
+                    uv=normalize(vec3(uv,0.3)).xy;
+                    vec2 uv0 = uv;
+                      float time = iTime * 0.4;
+                 vec2 uv2 = ( fragCoord - .5*iResolution.xy ) / iResolution.y;
+                 
+                 vec4 O=fragColor;
+                 vec2 u =fragCoord;
+
+                  vec2 R = iResolution.xy, L,
+                         U = fract( 3.*( u - .5*R ) / R.y ) -.5 ;
+                       U*=mat2(cos(iTime),sin(iTime),-sin(iTime),cos(iTime));
+                      vec2 V = abs( vec2( U.x+U.y, U.x-U.y ) );
+                       V*=mat2(cos(iTime),sin(iTime),-sin(iTime),cos(iTime));
+                       // 45° rotation and 4-symmetry
+                         V = abs( U + vec2( U.y, -U ) );            // 
+                    V = V.x > V.y ? V.yx : V;                       // X-Y symmetry
+                    
+                    L = 1.- S (abs( fract(V*8.+.5) -.5 ) / 8. );    // for thin black lines
+                    
+                    O =  vec4(    S( V.x-.25 )                      // large white cross
+                               *  L.x                               // long thin black lines
+                               *( V.y < .27 ? L.y : 1. )            // short thin black lines (square grid)
+                               *  S(max(U.x,U.y) - .49 )            // main tiles border
+                             );
+                 
+                 
+                    vec2 p = uv * 12.0;
+
+                    // Warp the field over time
+                    vec2 offset = vec2(
+                        fbm(p + vec2(0.0, time)),
+                        fbm(p + vec2(5.2, time + 1.3))
+                    );
+                    p += offset * 1.2;
+
+                    float field = fbm(p + time * 0.3);
+
+                    // Sharpen features into blobs
+                    float intensity = smoothstep(0.3, 0.7, field);
+
+                    // Final color mapping
+                    vec3 col2 = lavaPalette(intensity);
+                    vec3 finalCol = vec3(0.0);
+                    
+                    for (int i = 0; i < 4; i++) {
+                        uv = fract(uv * 2.257) - 0.5;
+                    
+                        float d = length(uv) * exp(-length(uv0)) * exp(length(uv));
+                    
+                        vec3 col = palette(length(uv0) + float(i)*.9 + iTime*.5)+O.xyz;
+                    
+                        d = sin(d*8. + iTime)/8.;
+                        d = abs(d);
+                    
+                        d = pow(0.0089 / d, PI / 2.0);
+                    
+                    
+                        finalCol += d * col*col2-O.xyz;
+                    }
+
+                    fragColor = vec4(finalCol, 1.0);
+                    uv *= 2.0 * ( cos(iTime * 2.0) -2.5); // scale
+                    float anim = sin(iTime * 12.0) * 0.1 + 1.0;  // anim between 0.9 - 1.1 
+                    fragColor*= vec4(happy_star(uv2, anim) * vec3(0.35,0.2,0.15)*2., 1.0);
+                    
+                }
+
+                void main() {
+                    mainImage(gl_FragColor, gl_FragCoord.xy);
+                }
+            `,
             transparent: false,
             side: THREE.DoubleSide
-        })
+        });
     }
 }

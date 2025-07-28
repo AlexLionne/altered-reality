@@ -18,6 +18,7 @@ export default class extends ShaderMaterial {
                 uReflectivity:     { value: 0.5 },
                 uLightDir:         { value: new THREE.Vector3(0,10,10).normalize() },
                 uLightIntensity:   { value: 1 },
+                uAmbientLight:     { value: .3 }, // Nouveau uniform pour l'intensité ambiante
                 uEnvMap:           { value: null },
                 uCamPos:           { value: new THREE.Vector3() },
                 uColors:           { value: Array(5).fill(new THREE.Vector3()) },
@@ -27,7 +28,9 @@ export default class extends ShaderMaterial {
                 uLevel:            { value: 0 },
                 uSeed:             { value: 0 },
                 uYBias:            { value: 0 },
-                uPixelSize:        { value: 0 }, // 👈 nouveau uniform
+                uPixelSize:        { value: 0 },
+                uMirrorX:          { value: false },
+                uMirrorY:          { value: false },
             },
             vertexShader: `
                 varying vec2 vUv;
@@ -41,6 +44,8 @@ export default class extends ShaderMaterial {
                 }
             `,
             fragmentShader: `
+                uniform bool uMirrorX;
+                uniform bool uMirrorY;
                 uniform float uTime;
                 uniform vec2 uResolution;
                 uniform float uDisplacementX;
@@ -54,6 +59,7 @@ export default class extends ShaderMaterial {
                 uniform float uReflectivity;
                 uniform vec3 uLightDir;
                 uniform float uLightIntensity;
+                uniform float uAmbientLight;
                 uniform samplerCube uEnvMap;
                 uniform vec3 uCamPos;
                 uniform vec3 uColors[5];
@@ -110,7 +116,9 @@ export default class extends ShaderMaterial {
                     if (uPixelSize > 1.0) {
                         frag = floor(frag / uPixelSize) * uPixelSize;
                     }
-                    vec2 uv   = frag / uResolution.x;
+                    vec2 uv = frag / uResolution.x;
+                    if (uMirrorX) uv.x = 1.0 - uv.x;
+                    if (uMirrorY) uv.y = 1.0 - uv.y;
                     float dx  = pattern(uv, uSeed);
                     float dy  = pattern(uv + vec2(1.7,2.3), uSeed);
                     vec2 duv  = uv + vec2(dx * uDisplacementX, dy * uDisplacementY) * uDeformAmplitude;
@@ -135,7 +143,7 @@ export default class extends ShaderMaterial {
                     vec3 R = reflect(-V, N);
                     vec3 env = textureCube(uEnvMap, R).rgb;
 
-                    vec3 lit = baseCol.rgb * lam + spec * (1.0 - uRoughness);
+                    vec3 lit = baseCol.rgb * (uAmbientLight + lam) + spec * (1.0 - uRoughness);
                     vec3 color = mix(lit, env, uReflectivity);
                     color = mix(color, vec3(1.0), uBrightness);
                     gl_FragColor = vec4(color, uOpacity);
