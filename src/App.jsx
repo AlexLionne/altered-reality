@@ -106,14 +106,11 @@ export default function App() {
     const [deformAmplitude, setDeformAmplitude] = useState(0.63)  // Nouvel état pour l'amplitude
     const [noiseScale, setNoiseScale] = useState(1.9)
     const [opacity, setOpacity] = useState(1)
-    const [cartoonLvls, setCartoonLvls] = useState(100)
+    const [cartoonLvls, setCartoonLvls] = useState(50)
     const [roughness, setRoughness] = useState(1)
     const [reflectivity, setReflectivity] = useState(0)
     const [brightness, setBrightness] = useState(0)
-    const [particlesNo, setParticlesNo] = useState(100)
 
-    const [mirrorX, setMirrorX] = useState(false)
-    const [mirrorY, setMirrorY] = useState(false)
 
     const matRef = useRef()
     const matRef2 = useRef()
@@ -139,11 +136,6 @@ export default function App() {
             .name('Éclaircir')
             .onChange(setBrightness)
         gui.add({pixelSize}, 'pixelSize', 0, 8, 1).name('Pixel Size').onChange(setPixelSize)
-        gui.add({particlesNo}, 'particlesNo', 0, 100, 1).name('Nb particules').onChange(v => {
-            setParticlesNo(v)
-        });
-        gui.add({mirrorX}, 'mirrorX').name('Miroir X').onChange(setMirrorX)
-        gui.add({mirrorY}, 'mirrorY').name('Miroir Y').onChange(setMirrorY)
         gui.add({randomizeColors}, 'randomizeColors').name('Random')
         gui.add({exportSceneAsJPG}, 'exportSceneAsJPG').name('Exporter')
         gui.add({runExport}, 'runExport').name('Exporter 100')
@@ -186,9 +178,9 @@ export default function App() {
         useFrame((state, delta) => {
             // Fond pattern
             if (matRef2.current && matRef.current && matRef3.current && matRefBackground.current) {
-                const u = matRef2.current.uniforms
+                const outfit = matRef2.current.uniforms
                 const v = matRef.current.uniforms
-                const w = matRef3.current.uniforms
+                const body = matRef3.current.uniforms
                 const bg = matRefBackground.current.uniforms // Uniforms du fond
                 /*
                 const elapsed = isExportingVideo.current
@@ -198,30 +190,35 @@ export default function App() {
                 u.uTime.value = elapsed
                 v.uTime.value = elapsed
                 */
-                u.uTime.value = exportBaseTime.current
+                outfit.uTime.value = exportBaseTime.current
                 v.uTime.value = exportBaseTime.current
+                bg.uTime.value = exportBaseTime.current
 
-                u.uPixelSize.value = pixelSize
+                outfit.uPixelSize.value = pixelSize
                 v.uPixelSize.value = pixelSize
-                w.uPixelSize.value = pixelSize
+                body.uPixelSize.value = pixelSize
 
-                u.uMirrorX.value = mirrorX
-                u.uMirrorY.value = mirrorY
 
-                u.uResolution.value.set(state.size.width, state.size.height)
-                u.uDisplacementX.value = dx
-                u.uDisplacementY.value = dy
-                u.uDeformAmplitude.value = deformAmplitude  // Mise à jour de la nouvelle uniform
-                u.uNoiseScale.value = noiseScale * 1.5 //* 4
-                u.uOpacity.value = opacity
-                u.uCartoonLevels.value = cartoonLvls
-                u.uColors.value = liquid.colors.map(c => new THREE.Vector3(...new THREE.Color(c.value).toArray()))
-                u.uColorIntensities.value = liquid.colors.map(c => c.intensity)
-                u.uNumColors.value = liquid.colors.length
-                u.uIntensity.value = liquid.intensity
-                u.uLevel.value = liquid.level
-                u.uSeed.value = liquid.seed
-                u.uYBias.value = liquid.yBias
+
+                outfit.uBrightness.value = 0
+                outfit.uResolution.value.set(state.size.width, state.size.height)
+                outfit.uDisplacementX.value = dx
+                outfit.uDisplacementY.value = dy
+                outfit.uDeformAmplitude.value = deformAmplitude  // Mise à jour de la nouvelle uniform
+                outfit.uNoiseScale.value = noiseScale * 1.5
+                outfit.uOpacity.value = opacity
+                outfit.uCartoonLevels.value = cartoonLvls
+                outfit.uRoughness.value = roughness
+                outfit.uReflectivity.value = 0
+                outfit.uEnvMap.value = null  // Désactive l'environnement
+                outfit.uCamPos.value.copy(camera.position)
+                outfit.uColors.value = liquid.colors.map(c => new THREE.Vector3(...new THREE.Color(c.value).toArray()))
+                outfit.uColorIntensities.value = liquid.colors.map(c => c.intensity)
+                outfit.uNumColors.value = liquid.colors.length
+                outfit.uIntensity.value = liquid.intensity
+                outfit.uLevel.value = liquid.level
+                outfit.uSeed.value = liquid.seed
+                outfit.uYBias.value = liquid.yBias
 
                 v.uBrightness.value = brightness
                 v.uResolution.value.set(state.size.width, state.size.height)
@@ -244,44 +241,41 @@ export default function App() {
                 v.uYBias.value = liquid.yBias
 
 
-                w.uBrightness.value = brightness
-                w.uResolution.value.set(state.size.width, state.size.height)
-                w.uDisplacementX.value = dx
-                w.uDisplacementY.value = dy
-                w.uDeformAmplitude.value = deformAmplitude  // Mise à jour de la nouvelle uniform
-                w.uNoiseScale.value = noiseScale
-                w.uOpacity.value = opacity
-                w.uCartoonLevels.value = 1
-                w.uRoughness.value = 0
-                w.uReflectivity.value = 0
-                w.uEnvMap.value = null  // Désactive l'environnement
-                w.uCamPos.value.copy(camera.position)
-                w.uColors.value = liquid.colors.map(c => new THREE.Vector3(...new THREE.Color(c.value).toArray()))
-                w.uColorIntensities.value = liquid.colors.map(c => c.intensity)
-                w.uNumColors.value = liquid.colors.length
-                w.uIntensity.value = liquid.intensity
-                w.uLevel.value = liquid.level
-                w.uSeed.value = liquid.seed
-                w.uYBias.value = liquid.yBias
+                body.uBrightness.value = brightness
+                body.uResolution.value.set(state.size.width, state.size.height)
+                body.uDisplacementX.value = dx
+                body.uDisplacementY.value = dy
+                body.uDeformAmplitude.value = deformAmplitude  // Mise à jour de la nouvelle uniform
+                body.uNoiseScale.value = noiseScale
+                body.uOpacity.value = opacity
+                body.uCartoonLevels.value = 1
+                body.uRoughness.value = 0
+                body.uReflectivity.value = 0
+                body.uEnvMap.value = null  // Désactive l'environnement
+                body.uCamPos.value.copy(camera.position)
+                body.uColors.value = liquid.colors.map(c => new THREE.Vector3(...new THREE.Color(c.value).toArray()))
+                body.uColorIntensities.value = liquid.colors.map(c => c.intensity)
+                body.uNumColors.value = liquid.colors.length
+                body.uIntensity.value = liquid.intensity
+                body.uLevel.value = liquid.level
+                body.uSeed.value = liquid.seed
+                body.uYBias.value = liquid.yBias
 
-                //bg.uTime.value += delta
-                //bg.uPixelSize.value = pixelSize
-//
-//
-                //bg.uResolution.value.set(state.size.width, state.size.height)
-                //bg.uDisplacementX.value = dx
-                //bg.uDisplacementY.value = dy
-                //bg.uDeformAmplitude.value = deformAmplitude / 2 // Mise à jour de la nouvelle uniform
-                //bg.uNoiseScale.value = noiseScale //* 4
-                //bg.uOpacity.value = 0
-                //bg.uCartoonLevels.value = 100
-                //bg.uColors.value = liquid.colors.map(c => new THREE.Vector3(...new THREE.Color(c.value).toArray()))
-                //bg.uColorIntensities.value = liquid.colors.map(c => c.intensity)
-                //bg.uNumColors.value = liquid.colors.length
-                //bg.uIntensity.value = liquid.intensity
-                //bg.uLevel.value = liquid.level
-                //bg.uSeed.value = liquid.seed
-                //bg.uYBias.value = liquid.yBias
+                bg.uPixelSize.value = pixelSize
+                bg.uResolution.value.set(state.size.width, state.size.height)
+                bg.uDisplacementX.value = dx
+                bg.uDisplacementY.value = dy
+                bg.uDeformAmplitude.value = deformAmplitude // Mise à jour de la nouvelle uniform
+                bg.uNoiseScale.value = noiseScale //* 4
+                bg.uOpacity.value = 0
+                bg.uCartoonLevels.value = cartoonLvls
+                bg.uColors.value = liquid.colors.map(c => new THREE.Vector3(...new THREE.Color(c.value).toArray()))
+                bg.uColorIntensities.value = liquid.colors.map(c => c.intensity)
+                bg.uNumColors.value = liquid.colors.length
+                bg.uIntensity.value = liquid.intensity
+                bg.uLevel.value = liquid.level
+                bg.uSeed.value = liquid.seed
+                bg.uYBias.value = liquid.yBias
             }
         })
 
@@ -291,10 +285,10 @@ export default function App() {
                     ref={backgroundRef}
                     rotation={[0, Math.PI, 0]}
                     position={[0, 0, 5]} // Placé en arrière
-                    scale={[10, 10, 1]} // Grand pour couvrir le champ de la caméra
+                    scale={[5, 5, 1]} // Grand pour couvrir le champ de la caméra
                 >
                     <planeGeometry args={[1, 1]}/>
-                    <warpMaterialBackground ref={matRefBackground}/>
+                    <warpMaterialModel ref={matRefBackground}/>
                 </mesh>
                 <mesh
                     ref={mesh2Ref}
@@ -308,7 +302,7 @@ export default function App() {
                     geometry={nodes3.object_1.geometry}
                     scale={0.11}
                     rotation={[Math.PI / 2, 0, Math.PI]}
-                    position={[0, -5.6, -0.2]}
+                    position={[-0.034, -5.6, -0.2]}
                 >
                     <bodyWarpMaterialModel ref={matRef3}/>
                 </mesh>
@@ -343,7 +337,7 @@ export default function App() {
 
     const runExport = () => {
         const interval = setInterval(() => {
-            if (imageCount.current >= 100) {
+            if (imageCount.current >= 1000) {
                 clearInterval(interval)
                 return
             }
@@ -504,7 +498,7 @@ export default function App() {
         const dataURL = canvas.toDataURL('image/jpeg', 1.0)
         const link = document.createElement('a')
         link.href = dataURL
-        link.download = `${Math.random().toString().slice(2, 6)}.jpg`
+        link.download = `${Math.random().toString().slice(2, 10)}.jpg`
         link.click()
 
         // Nettoyage
@@ -517,7 +511,7 @@ export default function App() {
 
 
     return (
-        <div style={{width: 800, height: 800, margin: 'auto', backgroundColor: 'black'}}>
+        <div style={{width: 400, height: 400, margin: 'auto', backgroundColor: 'black'}}>
             <Canvas
                 onCreated={({gl, scene, camera}) => {
                     glRef.current = gl

@@ -1,4 +1,4 @@
-import { ShaderMaterial } from "three";
+import {ShaderMaterial} from "three";
 import * as THREE from "three";
 
 export default class extends ShaderMaterial {
@@ -9,7 +9,7 @@ export default class extends ShaderMaterial {
                 uResolution:       { value: new THREE.Vector2() },
                 uDisplacementX:    { value: 0 },
                 uDisplacementY:    { value: 0 },
-                uDeformAmplitude:  { value: 1.0 },
+                uDeformAmplitude:  { value: 1.0 },  // Nouvelle uniform pour l'amplitude des déformations
                 uNoiseScale:       { value: 10 },
                 uOpacity:          { value: 0.8 },
                 uCartoonLevels:    { value: 4.0 },
@@ -17,8 +17,8 @@ export default class extends ShaderMaterial {
                 uRoughness:        { value: 0.5 },
                 uReflectivity:     { value: 0.5 },
                 uLightDir:         { value: new THREE.Vector3(0,10,10).normalize() },
-                uLightIntensity:   { value: 1 },
-                uAmbientLight:     { value: .3 }, // Nouveau uniform pour l'intensité ambiante
+                uLightIntensity:   { value: .6 },
+                uAmbientLight:     { value: .2 }, // Nouveau uniform pour l'intensité ambiante
                 uEnvMap:           { value: null },
                 uCamPos:           { value: new THREE.Vector3() },
                 uColors:           { value: Array(5).fill(new THREE.Vector3()) },
@@ -29,8 +29,6 @@ export default class extends ShaderMaterial {
                 uSeed:             { value: 0 },
                 uYBias:            { value: 0 },
                 uPixelSize:        { value: 0 },
-                uMirrorX:          { value: false },
-                uMirrorY:          { value: false },
             },
             vertexShader: `
                 varying vec2 vUv;
@@ -44,8 +42,6 @@ export default class extends ShaderMaterial {
                 }
             `,
             fragmentShader: `
-                uniform bool uMirrorX;
-                uniform bool uMirrorY;
                 uniform float uTime;
                 uniform vec2 uResolution;
                 uniform float uDisplacementX;
@@ -117,8 +113,6 @@ export default class extends ShaderMaterial {
                         frag = floor(frag / uPixelSize) * uPixelSize;
                     }
                     vec2 uv = frag / uResolution.x;
-                    if (uMirrorX) uv.x = 1.0 - uv.x;
-                    if (uMirrorY) uv.y = 1.0 - uv.y;
                     float dx  = pattern(uv, uSeed);
                     float dy  = pattern(uv + vec2(1.7,2.3), uSeed);
                     vec2 duv  = uv + vec2(dx * uDisplacementX, dy * uDisplacementY) * uDeformAmplitude;
@@ -151,6 +145,6 @@ export default class extends ShaderMaterial {
             `,
             transparent: false,
             side: THREE.DoubleSide
-        });
+        })
     }
 }
