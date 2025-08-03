@@ -1,324 +1,89 @@
-import React, {useRef, useState} from 'react'
-import {Canvas, extend, useFrame, useLoader, useThree} from '@react-three/fiber'
+import React, {useRef} from 'react'
+import {Canvas, useLoader} from '@react-three/fiber'
 import {OrbitControls, useGLTF} from '@react-three/drei'
 import * as THREE from 'three'
-import WarpMaterialModel from "./materials/WarpMaterialModel.js"
-import BodyWarpMaterialModel from "./materials/BodyWarpMaterialModel.js"
-import WarpMaterialBackground from "./materials/WarpMaterialBackground.js"
-import {useGUI} from "./hooks/useGUI.js"
-import {settings} from "./settings/index.js";
-
-// 1) Extend deux shaders : modèle (avec éclairage/réflection) et fond (pattern seul)
-extend({
-    WarpMaterialModel,
-    WarpMaterialBackground,
-    BodyWarpMaterialModel,
-})
-
-const getRandomColor = () => {
-    const h = Math.floor(Math.random() * 360);
-    const s = 100;
-    const l = 50;
-    const rgb = hslToRgb(h / 360, s / 100, l / 100);
-    return '#' + rgb.map(x => x.toString(16).padStart(2, '0')).join('');
-};
-
-
-function hslToRgb(h, s, l) {
-    let r, g, b
-    if (s === 0) {
-        r = g = b = l
-    } else {
-        const hue2rgb = (p, q, t) => {
-            if (t < 0) t += 1
-            if (t > 1) t -= 1
-            if (t < 1 / 6) return p + (q - p) * 6 * t
-            if (t < 1 / 2) return q
-            if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6
-            return p
-        }
-        const q = l < 0.5 ? l * (1 + s) : l + s - l * s
-        const p = 2 * l - q
-        r = hue2rgb(p, q, h + 1 / 3)
-        g = hue2rgb(p, q, h)
-        b = hue2rgb(p, q, h - 1 / 3)
-    }
-    return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)]
-}
+import {useGUI} from "./hooks/useGUI.js";
 
 export default function App() {
-    // ——— États liquides & couleurs ———
-    const [liquid, setLiquid] = useState({
-        colors: [
-            {id: 0, value: "#000", intensity: 2},
-            ...settings.slice(0, 5)
-        ],
-        intensity: 2,
-        level: 2,
-        seed: 0,
-        yBias: 10,
-    })
-    const [pixelSize, setPixelSize] = useState(0)
-
-    const addColor = () => {
-        setLiquid(l => {
-            if (l.colors.length >= 5) return l
-            return {
-                ...l,
-                colors: [...l.colors, {id: l.colors.length + 1, value: '#ffffff', intensity: 1}]
-            }
-        })
-    }
-    const removeColor = id =>
-        setLiquid(l => ({...l, colors: l.colors.filter(c => c.id !== id)}))
-    const updateColorValue = (id, v) =>
-        setLiquid(l => ({
-            ...l,
-            colors: l.colors.map(c => (c.id === id ? {...c, value: v} : c))
-        }))
-    const updateColorIntensity = (id, i) =>
-        setLiquid(l => ({
-            ...l,
-            colors: l.colors.map(c => (c.id === id ? {...c, intensity: i} : c))
-        }))
-    const moveColorUp = i => {
-        setLiquid(l => {
-            if (i === 0) return l
-            const a = [...l.colors]
-            ;[a[i - 1], a[i]] = [a[i], a[i - 1]]
-            return {...l, colors: a}
-        })
-    }
-    const moveColorDown = i => {
-        setLiquid(l => {
-            if (i === l.colors.length - 1) return l
-            const a = [...l.colors]
-            ;[a[i], a[i + 1]] = [a[i + 1], a[i]]
-            return {...l, colors: a}
-        })
-    }
-
-    // ——— États shader ———
-    const [dx, setDx] = useState(1)
-    const [dy, setDy] = useState(1)
-    const [deformAmplitude, setDeformAmplitude] = useState(0.63)  // Nouvel état pour l'amplitude
-    const [noiseScale, setNoiseScale] = useState(1.9)
-    const [opacity, setOpacity] = useState(1)
-    const [cartoonLvls, setCartoonLvls] = useState(50)
-    const [roughness, setRoughness] = useState(1)
-    const [reflectivity, setReflectivity] = useState(0)
-    const [brightness, setBrightness] = useState(0)
-
-
-    const matRef = useRef()
-    const matRef2 = useRef()
-    const matRef3 = useRef()
-    const timeOffset = useRef(300)
-    // export
-    const isExportingVideo = useRef(false)
-    const exportBaseTime = useRef(0)
-    const exportFrame = useRef(0)
-
     // ——— Hook GUI ———
     useGUI(gui => {
-        // Shader controls
-        gui.add({dx}, 'dx', 0, 1, 0.01).name('Dépl X').onChange(setDx)
-        gui.add({dy}, 'dy', 0, 1, 0.01).name('Dépl Y').onChange(setDy)
-        gui.add({deformAmplitude}, 'deformAmplitude', 0, 2, 0.01).name('Ampl. Déform').onChange(setDeformAmplitude)  // Nouveau contrôle GUI
-        gui.add({noiseScale}, 'noiseScale', 1.9, 2, 0.01).name('Échelle bruit').onChange(setNoiseScale)
-        gui.add({opacity}, 'opacity', 0, 1, 0.01).name('Opacité').onChange(setOpacity)
-        gui.add({cartoonLvls}, 'cartoonLvls', 0, 100, 1).name('Cartoon Lvls').onChange(setCartoonLvls)
-        gui.add({roughness}, 'roughness', 0, 1, 0.01).name('Roughness').onChange(setRoughness)
-        gui.add({reflectivity}, 'reflectivity', 0, 1, 0.01).name('Reflectivity').onChange(setReflectivity)
-        gui.add({brightness}, 'brightness', 0, 1, 0.01)
-            .name('Éclaircir')
-            .onChange(setBrightness)
-        gui.add({pixelSize}, 'pixelSize', 0, 8, 1).name('Pixel Size').onChange(setPixelSize)
-        gui.add({randomizeColors}, 'randomizeColors').name('Random')
         gui.add({exportSceneAsJPG}, 'exportSceneAsJPG').name('Exporter')
-        gui.add({runExport}, 'runExport').name('Exporter 100')
-        gui.add({startExportVideo}, 'startExportVideo').name('Video Exporter')
-
-        // Liquide folder
-        const lf = gui.addFolder('Liquide')
-        lf.add(liquid, 'intensity', 0, 2, 0.01).name('Intensité')
-            .onChange(v => setLiquid(l => ({...l, intensity: v})))
-        lf.add(liquid, 'level', -2, 2, 0.1).name('Level')
-            .onChange(v => setLiquid(l => ({...l, level: v})))
-        lf.add(liquid, 'yBias', -10, 10, 0.1).name('Y Bias')
-            .onChange(v => setLiquid(l => ({...l, yBias: v})))
-        lf.add({addColor}, 'addColor').name('Ajouter couleur')
-            .disable(liquid.colors.length >= 5)
-
-        liquid.colors.forEach((c, i) => {
-            const cf = lf.addFolder(`Couleur ${c.id}`)
-            cf.addColor(c, 'value').name('Couleur').onChange(v => updateColorValue(c.id, v))
-            cf.add(c, 'intensity', 0, 2, 0.01).name('Intensité')
-                .onChange(v => updateColorIntensity(c.id, v))
-            cf.add({remove: () => removeColor(c.id)}, 'remove').name('Supprimer')
-                .disable(liquid.colors.length <= 1)
-            cf.add({up: () => moveColorUp(i)}, 'up').name('↑').disable(i === 0)
-            cf.add({down: () => moveColorDown(i)}, 'down').name('↓')
-                .disable(i === liquid.colors.length - 1)
-        })
     })
 
     function Scene() {
-        const {camera} = useThree()
-        const meshRef = useRef()
-        const mesh2Ref = useRef()
-        const backgroundRef = useRef()
-        const matRefBackground = useRef() // Ref pour le matériau du fond
+        function configureTexture(texture, {
+            offset = [0, 0],
+            repeat = [1, 1],
+            rotation = 0,
+            center = [0, 0]
+        } = {}) {
+            texture.wrapS = texture.wrapT = THREE.RepeatWrapping
+            texture.offset.set(...offset)
+            texture.repeat.set(...repeat)
+            texture.center.set(...center)
+            texture.rotation = rotation
+            texture.needsUpdate = true
+        }
         const {nodes} = useGLTF('/model.glb')
         const {nodes: nodes2} = useGLTF('/untitled.glb')
         const {nodes: nodes3} = useGLTF('/skull.glb')
-        const texture = useLoader(THREE.TextureLoader, '/img/posts.png');
-        texture.wrapS = THREE.RepeatWrapping;
-        texture.wrapT = THREE.RepeatWrapping;
-        texture.repeat.set(10, 10);
-        texture.minFilter = THREE.LinearFilter;
-        texture.magFilter = THREE.LinearFilter;
-        texture.generateMipmaps = false;
-        texture.center.set(0.5, 0.5);         // définir le centre de rotation
-        texture.rotation = -Math.PI;
+        const textures = {
+            background: useLoader(THREE.TextureLoader, '/img/bg.png'),
+            body: useLoader(THREE.TextureLoader, '/img/body.png'),
+            mask: useLoader(THREE.TextureLoader, '/img/mask.png'),
+        }
 
-        useFrame((state, delta) => {
-            // Fond pattern
-            if (matRef2.current && matRef.current && matRef3.current && matRefBackground.current) {
-                const outfit = matRef2.current.uniforms
-                const v = matRef.current.uniforms
-                const body = matRef3.current.uniforms
-                const bg = matRefBackground.current.uniforms // Uniforms du fond
-                /*
-                const elapsed = isExportingVideo.current
-
-                ? exportBaseTime.current + exportFrame.current / fps
-                : performance.now() / 1000
-                u.uTime.value = elapsed
-                v.uTime.value = elapsed
-                */
-
-                //v.uTime.value = exportBaseTime.current
-                //bg.uTime.value = exportBaseTime.current
-
-
-                //v.uPixelSize.value = pixelSize
-                body.uPixelSize.value = pixelSize
-                //outfit.uTime.value = exportBaseTime.current
-                //outfit.uPixelSize.value = pixelSize
-                //outfit.uBrightness.value = 0
-                //outfit.uResolution.value.set(state.size.width, state.size.height)
-                //outfit.uDisplacementX.value = dx
-                //outfit.uDisplacementY.value = dy
-                //outfit.uDeformAmplitude.value = deformAmplitude  // Mise à jour de la nouvelle uniform
-                //outfit.uNoiseScale.value = noiseScale * 1.5
-                //outfit.uOpacity.value = opacity
-                //outfit.uCartoonLevels.value = cartoonLvls
-                //outfit.uRoughness.value = roughness
-                //outfit.uReflectivity.value = 0
-                //outfit.uEnvMap.value = null  // Désactive l'environnement
-                //outfit.uCamPos.value.copy(camera.position)
-                //outfit.uColors.value = liquid.colors.map(c => new THREE.Vector3(...new THREE.Color(c.value).toArray()))
-                //outfit.uColorIntensities.value = liquid.colors.map(c => c.intensity)
-                //outfit.uNumColors.value = liquid.colors.length
-                //outfit.uIntensity.value = liquid.intensity
-                //outfit.uLevel.value = liquid.level
-                //outfit.uSeed.value = liquid.seed
-                //outfit.uYBias.value = liquid.yBias
-
-                //v.uBrightness.value = brightness
-                //v.uResolution.value.set(state.size.width, state.size.height)
-                //v.uDisplacementX.value = dx
-                //v.uDisplacementY.value = dy
-                //v.uDeformAmplitude.value = deformAmplitude  // Mise à jour de la nouvelle uniform
-                //v.uNoiseScale.value = noiseScale * 1.5
-                //v.uOpacity.value = opacity
-                //v.uCartoonLevels.value = cartoonLvls
-                //v.uRoughness.value = roughness
-                //v.uReflectivity.value = 0
-                //v.uEnvMap.value = null  // Désactive l'environnement
-                //v.uCamPos.value.copy(camera.position)
-                //v.uColors.value = liquid.colors.map(c => new THREE.Vector3(...new THREE.Color(c.value).toArray()))
-                //v.uColorIntensities.value = liquid.colors.map(c => c.intensity)
-                //v.uNumColors.value = liquid.colors.length
-                //v.uIntensity.value = liquid.intensity
-                //v.uLevel.value = liquid.level
-                //v.uSeed.value = liquid.seed
-                //v.uYBias.value = liquid.yBias
-
-
-                body.uBrightness.value = brightness
-                body.uResolution.value.set(state.size.width, state.size.height)
-                body.uDisplacementX.value = dx
-                body.uDisplacementY.value = dy
-                body.uDeformAmplitude.value = deformAmplitude  // Mise à jour de la nouvelle uniform
-                body.uNoiseScale.value = noiseScale
-                body.uOpacity.value = opacity
-                body.uCartoonLevels.value = 1
-                body.uRoughness.value = 0
-                body.uReflectivity.value = 0
-                body.uEnvMap.value = null  // Désactive l'environnement
-                body.uCamPos.value.copy(camera.position)
-                body.uColors.value = liquid.colors.map(c => new THREE.Vector3(...new THREE.Color(c.value).toArray()))
-                body.uColorIntensities.value = liquid.colors.map(c => c.intensity)
-                body.uNumColors.value = liquid.colors.length
-                body.uIntensity.value = liquid.intensity
-                body.uLevel.value = liquid.level
-                body.uSeed.value = liquid.seed
-                body.uYBias.value = liquid.yBias
-
-                //bg.uPixelSize.value = pixelSize
-                //bg.uResolution.value.set(state.size.width, state.size.height)
-                //bg.uDisplacementX.value = dx
-                //bg.uDisplacementY.value = dy
-                //bg.uDeformAmplitude.value = deformAmplitude // Mise à jour de la nouvelle uniform
-                //bg.uNoiseScale.value = noiseScale //* 4
-                //bg.uOpacity.value = 0
-                //bg.uCartoonLevels.value = cartoonLvls
-                //bg.uColors.value = liquid.colors.map(c => new THREE.Vector3(...new THREE.Color(c.value).toArray()))
-                //bg.uColorIntensities.value = liquid.colors.map(c => c.intensity)
-                //bg.uNumColors.value = liquid.colors.length
-                //bg.uIntensity.value = liquid.intensity
-                //bg.uLevel.value = liquid.level
-                //bg.uSeed.value = liquid.seed
-                //bg.uYBias.value = liquid.yBias
-            }
+        configureTexture(textures.body, {
+            offset: [1, 0.1],
+            rotation: Math.PI,
+            repeat: [-2, 2],
+            center: [2, 2]
         })
 
+        configureTexture(textures.mask, {
+            offset: [2, 0.23],
+            rotation: Math.PI,
+            repeat: [-2.2, 2.2],
+            center: [0, 0]
+        })
+//Math.PI / 3
         return (
-            <group>
+            <group   rotation={[0, Math.PI / 3 ,0]}>
                 <mesh
-                    ref={backgroundRef}
                     rotation={[0, Math.PI, 0]}
                     position={[0, 0, 5]} // Placé en arrière
                     scale={[5, 5, 1]} // Grand pour couvrir le champ de la caméra
                 >
-                    <meshBasicMaterial color={'white'}/>
+                    <meshStandardMaterial  color={'blue'} side={THREE.DoubleSide} toneMapping={true}/>
                     <planeGeometry args={[1, 1]}/>
                 </mesh>
                 <mesh
-                    ref={mesh2Ref}
+                    castShadow
+                    recieveShadow
                     geometry={nodes2.Beanie_Outfit_V01.geometry}
                     rotation={[Math.PI / 2, 0, Math.PI]}
                     position={[0, -10.51, 0]}
                     scale={0.006}>
-                    <meshBasicMaterial ref={matRef} map={texture} toneMapped={false}  side={THREE.DoubleSide}/>
+                    <meshStandardMaterial  map={textures.body} side={THREE.DoubleSide} toneMapping={true}/>
                 </mesh>
                 <mesh
+                    castShadow
+                    recieveShadow
                     geometry={nodes3.object_1.geometry}
                     scale={0.11}
                     rotation={[Math.PI / 2, 0, Math.PI]}
                     position={[-0.034, -5.55, -0.2]}
                 >
-                    <bodyWarpMaterialModel ref={matRef3}/>
+                    <meshStandardMaterial  color={'black'} side={THREE.DoubleSide}/>
                 </mesh>
                 <mesh
-                    ref={meshRef}
+                    castShadow
+                    recieveShadow
                     geometry={nodes.mask.geometry}
                     position={[0, 0, 0]}
                     rotation={[0, 0, 0]}
                 >
-                    <meshBasicMaterial ref={matRef} map={texture} toneMapped={false}  side={THREE.DoubleSide}/>
+                    <meshStandardMaterial  map={textures.mask} side={THREE.DoubleSide} toneMapping={true}/>
                 </mesh>
             </group>
         )
@@ -327,113 +92,6 @@ export default function App() {
     const glRef = useRef()
     const sceneRef = useRef()
     const cameraRef = useRef()
-    const imageCount = useRef(0)
-    const randomizeColors = () => {
-        exportBaseTime.current = Math.random() * 100000
-        setLiquid(l => ({
-            ...l,
-            colors: [
-                {id: 1, value: "#000", intensity: 2},
-                ...l.colors.slice(1, l.colors.length).map(c => ({
-                    ...c,
-                    value: getRandomColor()
-                }))]
-        }))
-    }
-
-    const runExport = () => {
-        const interval = setInterval(() => {
-            if (imageCount.current >= 1000) {
-                clearInterval(interval)
-                return
-            }
-            setTimeout(() => {
-                exportSceneAsJPG()
-                timeOffset.current = Math.floor(Math.random() * 10000)
-                randomizeColors()
-                imageCount.current++
-            }, 5000)
-
-        }, 10000)
-
-        return () => clearInterval(interval)
-    }
-    const fps = 60
-    const duration = 5
-    const totalFrames = fps * duration
-    const videoCount = useRef(0)
-
-    const startExportVideo = async () => {
-        const gl = glRef.current
-        const scene = sceneRef.current
-        const camera = cameraRef.current
-        if (!gl || !scene || !camera) return
-
-        const canvasSize = gl.domElement.getBoundingClientRect()
-        const factor = 10
-        const width = Math.floor(canvasSize.width * factor)
-        const height = Math.floor(canvasSize.height * factor)
-        const renderTarget = new THREE.WebGLRenderTarget(width, height)
-        renderTarget.texture.encoding = gl.outputEncoding
-
-        exportBaseTime.current = Math.random() * 100
-        exportFrame.current = 0
-        isExportingVideo.current = true
-
-        for (let frame = 0; frame < totalFrames; frame++) {
-            exportFrame.current = frame
-
-            console.log('exporting frame', frame)
-            // Attend le rendu complet de la frame
-            await new Promise(resolve => requestAnimationFrame(resolve))
-
-            gl.setRenderTarget(renderTarget)
-            gl.setSize(width, height)
-            camera.updateProjectionMatrix()
-            gl.render(scene, camera)
-
-            const buffer = new Uint8Array(width * height * 4)
-            gl.readRenderTargetPixels(renderTarget, 0, 0, width, height, buffer)
-
-            const canvas = document.createElement('canvas')
-            canvas.width = width
-            canvas.height = height
-            const ctx = canvas.getContext('2d')
-            const imageData = ctx.createImageData(width, height)
-
-            for (let y = 0; y < height; y++) {
-                for (let x = 0; x < width; x++) {
-                    const src = ((height - y - 1) * width + x) * 4
-                    const dst = (y * width + x) * 4
-                    imageData.data[dst] = buffer[src]
-                    imageData.data[dst + 1] = buffer[src + 1]
-                    imageData.data[dst + 2] = buffer[src + 2]
-                    imageData.data[dst + 3] = buffer[src + 3]
-                }
-            }
-
-            ctx.putImageData(imageData, 0, 0)
-
-            await new Promise(resolve => {
-                canvas.toBlob(blob => {
-                    const url = URL.createObjectURL(blob)
-                    const a = document.createElement('a')
-                    a.href = url
-                    a.download = `video${videoCount.current.toString().padStart(2, '0')}_frame_${frame.toString().padStart(3, '0')}.png`
-                    a.click()
-                    URL.revokeObjectURL(url)
-                    resolve()
-                }, 'image/png')
-            })
-            await new Promise(resolve => setTimeout(resolve, 5000))
-        }
-
-        isExportingVideo.current = false
-        videoCount.current++
-        renderTarget.dispose()
-        gl.setRenderTarget(null)
-        //ffmpeg -framerate 60 -i video00_frame_%03d.png -c:v libx264 -pix_fmt yuv420p output.mp4
-    }
 
     const exportSceneAsJPG = () => {
         const gl = glRef.current
@@ -454,8 +112,9 @@ export default function App() {
         const height = Math.floor(canvasSize.height * factor)
 
         // Préparer un render target 4K
-        const renderTarget = new THREE.WebGLRenderTarget(width, height)
-        renderTarget.texture.encoding = gl.outputEncoding
+        const renderTarget = new THREE.WebGLRenderTarget(width, height, {
+            encoding: THREE.sRGBEncoding
+        })
 
         // Redimensionner temporairement le renderer
         gl.setRenderTarget(renderTarget)
@@ -486,7 +145,6 @@ export default function App() {
         canvas.height = height
         const ctx = canvas.getContext('2d')
         const imageData = ctx.createImageData(width, height)
-
         for (let y = 0; y < height; y++) {
             for (let x = 0; x < width; x++) {
                 const src = ((height - y - 1) * width + x) * 4
@@ -501,7 +159,7 @@ export default function App() {
         ctx.putImageData(imageData, 0, 0)
 
         // Téléchargement
-        const dataURL = canvas.toDataURL('image/jpeg', 1.0)
+        const dataURL = canvas.toDataURL('image/png', 1.0)
         const link = document.createElement('a')
         link.href = dataURL
         link.download = `${Math.random().toString().slice(2, 10)}.jpg`
@@ -521,8 +179,14 @@ export default function App() {
             <Canvas
                 onCreated={({gl, scene, camera}) => {
                     glRef.current = gl
+
                     sceneRef.current = scene
                     cameraRef.current = camera
+                    // Assurer le bon tone mapping + encodage
+                    gl.outputEncoding = THREE.sRGBEncoding
+                    gl.toneMapping = THREE.ACESFilmicToneMapping
+                    gl.toneMappingExposure = 1.0
+                    gl.setClearColor('#1e1e1e'); // ou new THREE.Color(...)
                 }}
                 orthographic
                 camera={{
@@ -538,6 +202,9 @@ export default function App() {
             >
                 <OrbitControls/>
                 <Scene/>
+                <ambientLight castShadow intensity={5}/>
+                <directionalLight castShadow intensity={5} color={'blue'} position={[0, 10, -1]}/>
+                <directionalLight castShadow intensity={20} color={'pink'} position={[0, 1, -1]}/>
             </Canvas>
         </div>
     )
