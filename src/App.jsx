@@ -16,7 +16,28 @@ extend({
     BodyWarpMaterialModel,
     NightSkyMaterial
 })
+function lightenHexColor(hex, amount = 0.2) {
+    // Retire le #
+    hex = hex.replace(/^#/, '');
 
+    // Supporte les hex courts (#fff)
+    if (hex.length === 3) {
+        hex = hex.split('').map(c => c + c).join('');
+    }
+
+    const num = parseInt(hex, 16);
+
+    let r = (num >> 16) & 0xff;
+    let g = (num >> 8) & 0xff;
+    let b = num & 0xff;
+
+    // Applique l’éclaircissement
+    r = Math.min(255, Math.floor(r + (255 - r) * amount));
+    g = Math.min(255, Math.floor(g + (255 - g) * amount));
+    b = Math.min(255, Math.floor(b + (255 - b) * amount));
+
+    return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+}
 const getRandomColor = () => {
     const h = Math.floor(Math.random() * 360);
     const s = 100;
@@ -103,10 +124,10 @@ export default function App() {
     // ——— États shader ———
     const [dx, setDx] = useState(1)
     const [dy, setDy] = useState(1)
-    const [deformAmplitude, setDeformAmplitude] = useState(0.63)  // Nouvel état pour l'amplitude
-    const [noiseScale, setNoiseScale] = useState(1.9)
+    const [deformAmplitude, setDeformAmplitude] = useState(0)  // Nouvel état pour l'amplitude
+    const [noiseScale, setNoiseScale] = useState(1)
     const [opacity, setOpacity] = useState(1)
-    const [cartoonLvls, setCartoonLvls] = useState(50)
+    const [cartoonLvls, setCartoonLvls] = useState(5)
     const [roughness, setRoughness] = useState(1)
     const [reflectivity, setReflectivity] = useState(0)
     const [brightness, setBrightness] = useState(0)
@@ -114,7 +135,6 @@ export default function App() {
 
     const matRef = useRef()
     const matRef2 = useRef()
-    const matRef3 = useRef()
     const timeOffset = useRef(300)
     // export
     const isExportingVideo = useRef(false)
@@ -127,7 +147,7 @@ export default function App() {
         gui.add({dx}, 'dx', 0, 1, 0.01).name('Dépl X').onChange(setDx)
         gui.add({dy}, 'dy', 0, 1, 0.01).name('Dépl Y').onChange(setDy)
         gui.add({deformAmplitude}, 'deformAmplitude', 0, 2, 0.01).name('Ampl. Déform').onChange(setDeformAmplitude)  // Nouveau contrôle GUI
-        gui.add({noiseScale}, 'noiseScale', 1.9, 2, 0.01).name('Échelle bruit').onChange(setNoiseScale)
+        gui.add({noiseScale}, 'noiseScale', 0, 2, 0.01).name('Échelle bruit').onChange(setNoiseScale)
         gui.add({opacity}, 'opacity', 0, 1, 0.01).name('Opacité').onChange(setOpacity)
         gui.add({cartoonLvls}, 'cartoonLvls', 0, 100, 1).name('Cartoon Lvls').onChange(setCartoonLvls)
         gui.add({roughness}, 'roughness', 0, 1, 0.01).name('Roughness').onChange(setRoughness)
@@ -176,11 +196,14 @@ export default function App() {
         const {nodes: nodes3} = useGLTF('/skull.glb')
 
         useFrame((state, delta) => {
+
             // Fond pattern
-            if (matRef2.current && matRef.current && matRef3.current && matRefBackground.current) {
+            if (matRef2.current && matRef.current && matRefBackground.current) {
+
+                glRef.current && glRef.current.setClearColor(lightenHexColor(liquid.colors[1].value, .7 ),1)
+
                 const outfit = matRef2.current.uniforms
                 const v = matRef.current.uniforms
-                const body = matRef3.current.uniforms
                 const bg = matRefBackground.current.uniforms // Uniforms du fond
                 /*
                 const elapsed = isExportingVideo.current
@@ -196,7 +219,6 @@ export default function App() {
 
                 outfit.uPixelSize.value = pixelSize
                 v.uPixelSize.value = pixelSize
-                body.uPixelSize.value = pixelSize
 
 
 
@@ -241,25 +263,6 @@ export default function App() {
                 v.uYBias.value = liquid.yBias
 
 
-                body.uBrightness.value = brightness
-                body.uResolution.value.set(state.size.width, state.size.height)
-                body.uDisplacementX.value = dx
-                body.uDisplacementY.value = dy
-                body.uDeformAmplitude.value = deformAmplitude  // Mise à jour de la nouvelle uniform
-                body.uNoiseScale.value = noiseScale
-                body.uOpacity.value = opacity
-                body.uCartoonLevels.value = 1
-                body.uRoughness.value = 0
-                body.uReflectivity.value = 0
-                body.uEnvMap.value = null  // Désactive l'environnement
-                body.uCamPos.value.copy(camera.position)
-                body.uColors.value = liquid.colors.map(c => new THREE.Vector3(...new THREE.Color(c.value).toArray()))
-                body.uColorIntensities.value = liquid.colors.map(c => c.intensity)
-                body.uNumColors.value = liquid.colors.length
-                body.uIntensity.value = liquid.intensity
-                body.uLevel.value = liquid.level
-                body.uSeed.value = liquid.seed
-                body.uYBias.value = liquid.yBias
 
                 bg.uPixelSize.value = pixelSize
                 bg.uResolution.value.set(state.size.width, state.size.height)
@@ -280,8 +283,10 @@ export default function App() {
         })
 
         return (
-            <group>
+            <group rotation={[0, Math.PI / 3, 0]}>
                 <mesh
+                    recieveShadow
+                    castShadow
                     ref={backgroundRef}
                     rotation={[0, Math.PI, 0]}
                     position={[0, 0, 5]} // Placé en arrière
@@ -291,6 +296,8 @@ export default function App() {
                     <warpMaterialModel ref={matRefBackground}/>
                 </mesh>
                 <mesh
+                    recieveShadow
+                    castShadow
                     ref={mesh2Ref}
                     geometry={nodes2.Beanie_Outfit_V01.geometry}
                     rotation={[Math.PI / 2, 0, Math.PI]}
@@ -299,14 +306,18 @@ export default function App() {
                     <warpMaterialModel ref={matRef2}/>
                 </mesh>
                 <mesh
+                    recieveShadow
+                    castShadow
                     geometry={nodes3.object_1.geometry}
                     scale={0.11}
                     rotation={[Math.PI / 2, 0, Math.PI]}
                     position={[-0.034, -5.6, -0.2]}
                 >
-                    <bodyWarpMaterialModel ref={matRef3}/>
+                    <meshStandardMaterial color="black"/>
                 </mesh>
                 <mesh
+                    recieveShadow
+                    castShadow
                     ref={meshRef}
                     geometry={nodes.mask.geometry}
                     position={[0, 0, 0]}
@@ -517,6 +528,7 @@ export default function App() {
                     glRef.current = gl
                     sceneRef.current = scene
                     cameraRef.current = camera
+                    gl.setClearColor('#ffea82')
                 }}
                 orthographic
                 camera={{
@@ -530,6 +542,9 @@ export default function App() {
                     zoom: 1.4
                 }}
             >
+                <ambientLight castShadow intensity={5}/>
+                <directionalLight castShadow intensity={5} color={'blue'} position={[0, 10, -1]}/>
+                <directionalLight castShadow intensity={20} color={'white'} position={[0, 1, -1]}/>
                 <OrbitControls/>
                 <Scene/>
             </Canvas>
