@@ -1,12 +1,11 @@
 import React, {useRef, useState} from 'react'
-import {Canvas, extend, useFrame, useThree} from '@react-three/fiber'
+import {Canvas, extend, useFrame, useLoader, useThree} from '@react-three/fiber'
 import {OrbitControls, useGLTF} from '@react-three/drei'
 import * as THREE from 'three'
 import WarpMaterialModel from "./materials/WarpMaterialModel.js"
 import BodyWarpMaterialModel from "./materials/BodyWarpMaterialModel.js"
 import WarpMaterialBackground from "./materials/WarpMaterialBackground.js"
 import {useGUI} from "./hooks/useGUI.js"
-import NightSkyMaterial from "./materials/NightSkyMaterial.js";
 import {settings} from "./settings/index.js";
 
 // 1) Extend deux shaders : modèle (avec éclairage/réflection) et fond (pattern seul)
@@ -14,7 +13,6 @@ extend({
     WarpMaterialModel,
     WarpMaterialBackground,
     BodyWarpMaterialModel,
-    NightSkyMaterial
 })
 
 const getRandomColor = () => {
@@ -174,6 +172,15 @@ export default function App() {
         const {nodes} = useGLTF('/model.glb')
         const {nodes: nodes2} = useGLTF('/untitled.glb')
         const {nodes: nodes3} = useGLTF('/skull.glb')
+        const texture = useLoader(THREE.TextureLoader, '/img/posts.png');
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(10, 10);
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.generateMipmaps = false;
+        texture.center.set(0.5, 0.5);         // définir le centre de rotation
+        texture.rotation = -Math.PI;
 
         useFrame((state, delta) => {
             // Fond pattern
@@ -190,55 +197,54 @@ export default function App() {
                 u.uTime.value = elapsed
                 v.uTime.value = elapsed
                 */
-                outfit.uTime.value = exportBaseTime.current
-                v.uTime.value = exportBaseTime.current
-                bg.uTime.value = exportBaseTime.current
 
-                outfit.uPixelSize.value = pixelSize
-                v.uPixelSize.value = pixelSize
+                //v.uTime.value = exportBaseTime.current
+                //bg.uTime.value = exportBaseTime.current
+
+
+                //v.uPixelSize.value = pixelSize
                 body.uPixelSize.value = pixelSize
+                //outfit.uTime.value = exportBaseTime.current
+                //outfit.uPixelSize.value = pixelSize
+                //outfit.uBrightness.value = 0
+                //outfit.uResolution.value.set(state.size.width, state.size.height)
+                //outfit.uDisplacementX.value = dx
+                //outfit.uDisplacementY.value = dy
+                //outfit.uDeformAmplitude.value = deformAmplitude  // Mise à jour de la nouvelle uniform
+                //outfit.uNoiseScale.value = noiseScale * 1.5
+                //outfit.uOpacity.value = opacity
+                //outfit.uCartoonLevels.value = cartoonLvls
+                //outfit.uRoughness.value = roughness
+                //outfit.uReflectivity.value = 0
+                //outfit.uEnvMap.value = null  // Désactive l'environnement
+                //outfit.uCamPos.value.copy(camera.position)
+                //outfit.uColors.value = liquid.colors.map(c => new THREE.Vector3(...new THREE.Color(c.value).toArray()))
+                //outfit.uColorIntensities.value = liquid.colors.map(c => c.intensity)
+                //outfit.uNumColors.value = liquid.colors.length
+                //outfit.uIntensity.value = liquid.intensity
+                //outfit.uLevel.value = liquid.level
+                //outfit.uSeed.value = liquid.seed
+                //outfit.uYBias.value = liquid.yBias
 
-
-
-                outfit.uBrightness.value = 0
-                outfit.uResolution.value.set(state.size.width, state.size.height)
-                outfit.uDisplacementX.value = dx
-                outfit.uDisplacementY.value = dy
-                outfit.uDeformAmplitude.value = deformAmplitude  // Mise à jour de la nouvelle uniform
-                outfit.uNoiseScale.value = noiseScale * 1.5
-                outfit.uOpacity.value = opacity
-                outfit.uCartoonLevels.value = cartoonLvls
-                outfit.uRoughness.value = roughness
-                outfit.uReflectivity.value = 0
-                outfit.uEnvMap.value = null  // Désactive l'environnement
-                outfit.uCamPos.value.copy(camera.position)
-                outfit.uColors.value = liquid.colors.map(c => new THREE.Vector3(...new THREE.Color(c.value).toArray()))
-                outfit.uColorIntensities.value = liquid.colors.map(c => c.intensity)
-                outfit.uNumColors.value = liquid.colors.length
-                outfit.uIntensity.value = liquid.intensity
-                outfit.uLevel.value = liquid.level
-                outfit.uSeed.value = liquid.seed
-                outfit.uYBias.value = liquid.yBias
-
-                v.uBrightness.value = brightness
-                v.uResolution.value.set(state.size.width, state.size.height)
-                v.uDisplacementX.value = dx
-                v.uDisplacementY.value = dy
-                v.uDeformAmplitude.value = deformAmplitude  // Mise à jour de la nouvelle uniform
-                v.uNoiseScale.value = noiseScale * 1.5
-                v.uOpacity.value = opacity
-                v.uCartoonLevels.value = cartoonLvls
-                v.uRoughness.value = roughness
-                v.uReflectivity.value = 0
-                v.uEnvMap.value = null  // Désactive l'environnement
-                v.uCamPos.value.copy(camera.position)
-                v.uColors.value = liquid.colors.map(c => new THREE.Vector3(...new THREE.Color(c.value).toArray()))
-                v.uColorIntensities.value = liquid.colors.map(c => c.intensity)
-                v.uNumColors.value = liquid.colors.length
-                v.uIntensity.value = liquid.intensity
-                v.uLevel.value = liquid.level
-                v.uSeed.value = liquid.seed
-                v.uYBias.value = liquid.yBias
+                //v.uBrightness.value = brightness
+                //v.uResolution.value.set(state.size.width, state.size.height)
+                //v.uDisplacementX.value = dx
+                //v.uDisplacementY.value = dy
+                //v.uDeformAmplitude.value = deformAmplitude  // Mise à jour de la nouvelle uniform
+                //v.uNoiseScale.value = noiseScale * 1.5
+                //v.uOpacity.value = opacity
+                //v.uCartoonLevels.value = cartoonLvls
+                //v.uRoughness.value = roughness
+                //v.uReflectivity.value = 0
+                //v.uEnvMap.value = null  // Désactive l'environnement
+                //v.uCamPos.value.copy(camera.position)
+                //v.uColors.value = liquid.colors.map(c => new THREE.Vector3(...new THREE.Color(c.value).toArray()))
+                //v.uColorIntensities.value = liquid.colors.map(c => c.intensity)
+                //v.uNumColors.value = liquid.colors.length
+                //v.uIntensity.value = liquid.intensity
+                //v.uLevel.value = liquid.level
+                //v.uSeed.value = liquid.seed
+                //v.uYBias.value = liquid.yBias
 
 
                 body.uBrightness.value = brightness
@@ -261,21 +267,21 @@ export default function App() {
                 body.uSeed.value = liquid.seed
                 body.uYBias.value = liquid.yBias
 
-                bg.uPixelSize.value = pixelSize
-                bg.uResolution.value.set(state.size.width, state.size.height)
-                bg.uDisplacementX.value = dx
-                bg.uDisplacementY.value = dy
-                bg.uDeformAmplitude.value = deformAmplitude // Mise à jour de la nouvelle uniform
-                bg.uNoiseScale.value = noiseScale //* 4
-                bg.uOpacity.value = 0
-                bg.uCartoonLevels.value = cartoonLvls
-                bg.uColors.value = liquid.colors.map(c => new THREE.Vector3(...new THREE.Color(c.value).toArray()))
-                bg.uColorIntensities.value = liquid.colors.map(c => c.intensity)
-                bg.uNumColors.value = liquid.colors.length
-                bg.uIntensity.value = liquid.intensity
-                bg.uLevel.value = liquid.level
-                bg.uSeed.value = liquid.seed
-                bg.uYBias.value = liquid.yBias
+                //bg.uPixelSize.value = pixelSize
+                //bg.uResolution.value.set(state.size.width, state.size.height)
+                //bg.uDisplacementX.value = dx
+                //bg.uDisplacementY.value = dy
+                //bg.uDeformAmplitude.value = deformAmplitude // Mise à jour de la nouvelle uniform
+                //bg.uNoiseScale.value = noiseScale //* 4
+                //bg.uOpacity.value = 0
+                //bg.uCartoonLevels.value = cartoonLvls
+                //bg.uColors.value = liquid.colors.map(c => new THREE.Vector3(...new THREE.Color(c.value).toArray()))
+                //bg.uColorIntensities.value = liquid.colors.map(c => c.intensity)
+                //bg.uNumColors.value = liquid.colors.length
+                //bg.uIntensity.value = liquid.intensity
+                //bg.uLevel.value = liquid.level
+                //bg.uSeed.value = liquid.seed
+                //bg.uYBias.value = liquid.yBias
             }
         })
 
@@ -287,22 +293,22 @@ export default function App() {
                     position={[0, 0, 5]} // Placé en arrière
                     scale={[5, 5, 1]} // Grand pour couvrir le champ de la caméra
                 >
+                    <meshBasicMaterial color={'white'}/>
                     <planeGeometry args={[1, 1]}/>
-                    <warpMaterialModel ref={matRefBackground}/>
                 </mesh>
                 <mesh
                     ref={mesh2Ref}
                     geometry={nodes2.Beanie_Outfit_V01.geometry}
                     rotation={[Math.PI / 2, 0, Math.PI]}
-                    position={[0, -10.7, 0]}
+                    position={[0, -10.51, 0]}
                     scale={0.006}>
-                    <warpMaterialModel ref={matRef2}/>
+                    <meshBasicMaterial ref={matRef} map={texture} toneMapped={false}  side={THREE.DoubleSide}/>
                 </mesh>
                 <mesh
                     geometry={nodes3.object_1.geometry}
                     scale={0.11}
                     rotation={[Math.PI / 2, 0, Math.PI]}
-                    position={[-0.034, -5.6, -0.2]}
+                    position={[-0.034, -5.55, -0.2]}
                 >
                     <bodyWarpMaterialModel ref={matRef3}/>
                 </mesh>
@@ -312,7 +318,7 @@ export default function App() {
                     position={[0, 0, 0]}
                     rotation={[0, 0, 0]}
                 >
-                    <warpMaterialModel ref={matRef}/>
+                    <meshBasicMaterial ref={matRef} map={texture} toneMapped={false}  side={THREE.DoubleSide}/>
                 </mesh>
             </group>
         )

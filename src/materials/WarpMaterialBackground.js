@@ -22,12 +22,14 @@ export default class extends ShaderMaterial {
                 uCamPos:           { value: new THREE.Vector3() },
                 uColors:           { value: Array(5).fill(new THREE.Vector3()) },
                 uColorIntensities: { value: Array(5).fill(0) },
-                uNumColors:        { value: 0 },
+                uNumColors:        { value: 1 },
                 uIntensity:        { value: 0 },
                 uLevel:            { value: 0 },
                 uSeed:             { value: 0 },
                 uYBias:            { value: 0 },
-                uPixelSize:        { value: 0 }, // 👈 nouveau uniform
+                uPixelSize:        { value: 0 },
+                uImages: { value: Array(8).fill(null) },
+                uUseImages: { value: Array(8).fill(false) },
             },
             vertexShader: `
                 varying vec2 vUv;
@@ -64,12 +66,22 @@ export default class extends ShaderMaterial {
                 uniform float uSeed;
                 uniform float uYBias;
                 uniform float uPixelSize;
+
                 varying vec2 vUv;
                 varying vec3 vNormal;
                 varying vec3 vWorldPos;
+                uniform sampler2D uImages[5];
+                uniform bool uUseImages[5];
 
                 float rand(vec3 p) {
                     return fract(sin(dot(p, vec3(12.9898,78.233,45.5432))) * 43758.5453);
+                }
+                vec2 hash(vec2 p) {
+                    p = vec2(dot(p, vec2(2127.1, 81.17)), dot(p, vec2(1269.5, 283.37)));
+                    return fract(sin(p)*43758.5453);
+                }
+                float filmGrainNoise(in vec2 uv) {
+                    return length(hash(vec2(uv.x, uv.y)));
                 }
                 float noise(vec2 p, float s) {
                     vec2 ip = floor(p), u = fract(p);
@@ -106,7 +118,41 @@ export default class extends ShaderMaterial {
                 }
 
                 void main() {
-                    mainImage(gl_FragColor, gl_FragCoord.xy);
+                    vec2 frag = vUv * uResolution;
+                    if (uPixelSize > 1.0) {
+                        frag = floor(frag / uPixelSize) * uPixelSize;
+                    }
+                    vec2 uv   = frag / uResolution.x;
+                    float dx  = pattern(uv, uSeed);
+                    float dy  = pattern(uv + vec2(1.7,2.3), uSeed);
+                    vec2 duv  = uv + vec2(dx * uDisplacementX, dy * uDisplacementY) * uDeformAmplitude;
+
+                    vec4 baseCol = vec4(0.0);
+                    if (uNumColors > 0) {
+                        float sh = pattern(duv, uSeed) * uIntensity;
+                        sh = floor(sh * uCartoonLevels) / uCartoonLevels;
+                        vec3 rgb = colormapColor(sh);
+                        float yF = vUv.y * 2.0 * uYBias;
+                        float a  = smoothstep(0.4, 0.6, sh + uLevel + yF);
+                        baseCol = mix(vec4(0.0), vec4(rgb,1.0), a);
+                    }
+                    
+                   
+
+                    vec3 N = normalize(vNormal);
+                    vec3 L = normalize(uLightDir);
+                    float lam = max(dot(N, L), 0.0) * uLightIntensity;
+                    float shin= mix(8.0, 64.0, 1.0 - uRoughness);
+                    float spec= pow(lam, shin) * uLightIntensity;
+
+                    vec3 V = normalize(uCamPos - vWorldPos);
+                    vec3 R = reflect(-V, N);
+                    vec3 env = textureCube(uEnvMap, R).rgb;
+
+                    vec3 lit = baseCol.rgb * lam + spec * (1.0 - uRoughness);
+                    vec3 color = mix(lit, env, uReflectivity);
+                    color = color - filmGrainNoise(uv) * 0.1;
+                    gl_FragColor = vec4(color, uOpacity);
                 }
             `,
             transparent: false,

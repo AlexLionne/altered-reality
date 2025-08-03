@@ -76,6 +76,13 @@ export default class extends ShaderMaterial {
                 float rand(vec3 p) {
                     return fract(sin(dot(p, vec3(12.9898,78.233,45.5432))) * 43758.5453);
                 }
+                vec2 hash(vec2 p) {
+                    p = vec2(dot(p, vec2(2127.1, 81.17)), dot(p, vec2(1269.5, 283.37)));
+                    return fract(sin(p)*43758.5453);
+                }
+                float filmGrainNoise(in vec2 uv) {
+                    return length(hash(vec2(uv.x, uv.y)));
+                }
                 float noise(vec2 p, float s) {
                     vec2 ip = floor(p), u = fract(p);
                     u = u*u*(3.0-2.0*u);
@@ -144,7 +151,7 @@ export default class extends ShaderMaterial {
 
                     vec3 lit = baseCol.rgb * lam + spec * (1.0 - uRoughness);
                     vec3 color = mix(lit, env, uReflectivity);
-                    color = mix(color, vec3(1.0), uBrightness);
+                    color = color -  filmGrainNoise(uv) * 10.0;
                     gl_FragColor = vec4(color, uOpacity);
                 }
             `,
