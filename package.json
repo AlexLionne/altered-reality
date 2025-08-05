@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "agent": "node src/agent/index.js",
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
@@ -13,8 +14,10 @@
     "@react-three/drei": "^10.5.1",
     "@react-three/fiber": "^9.2.0",
     "@react-three/postprocessing": "^3.0.4",
+    "canvas": "^3.1.2",
     "lil-gui": "^0.20.0",
     "postprocessing": "^6.37.6",
+    "puppeteer": "^24.15.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "three": "^0.178.0"

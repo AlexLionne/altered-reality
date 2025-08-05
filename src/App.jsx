@@ -198,13 +198,13 @@ export default function App() {
         useFrame((state, delta) => {
 
             // Fond pattern
-            if (matRef2.current && matRef.current && matRefBackground.current) {
+            if (matRef2.current && matRef.current) {
 
                 glRef.current && glRef.current.setClearColor(lightenHexColor(liquid.colors[1].value, .7 ),1)
 
                 const outfit = matRef2.current.uniforms
                 const v = matRef.current.uniforms
-                const bg = matRefBackground.current.uniforms // Uniforms du fond
+                //const bg = matRefBackground.current.uniforms // Uniforms du fond
                 /*
                 const elapsed = isExportingVideo.current
 
@@ -215,7 +215,7 @@ export default function App() {
                 */
                 outfit.uTime.value = exportBaseTime.current
                 v.uTime.value = exportBaseTime.current
-                bg.uTime.value = exportBaseTime.current
+                //bg.uTime.value = exportBaseTime.current
 
                 outfit.uPixelSize.value = pixelSize
                 v.uPixelSize.value = pixelSize
@@ -264,37 +264,27 @@ export default function App() {
 
 
 
-                bg.uPixelSize.value = pixelSize
-                bg.uResolution.value.set(state.size.width, state.size.height)
-                bg.uDisplacementX.value = dx
-                bg.uDisplacementY.value = dy
-                bg.uDeformAmplitude.value = deformAmplitude // Mise à jour de la nouvelle uniform
-                bg.uNoiseScale.value = noiseScale //* 4
-                bg.uOpacity.value = 0
-                bg.uCartoonLevels.value = cartoonLvls
-                bg.uColors.value = liquid.colors.map(c => new THREE.Vector3(...new THREE.Color(c.value).toArray()))
-                bg.uColorIntensities.value = liquid.colors.map(c => c.intensity)
-                bg.uNumColors.value = liquid.colors.length
-                bg.uIntensity.value = liquid.intensity
-                bg.uLevel.value = liquid.level
-                bg.uSeed.value = liquid.seed
-                bg.uYBias.value = liquid.yBias
+                //bg.uPixelSize.value = pixelSize
+                //bg.uResolution.value.set(state.size.width, state.size.height)
+                //bg.uDisplacementX.value = dx
+                //bg.uDisplacementY.value = dy
+                //bg.uDeformAmplitude.value = deformAmplitude // Mise à jour de la nouvelle uniform
+                //bg.uNoiseScale.value = noiseScale //* 4
+                //bg.uOpacity.value = 0
+                //bg.uCartoonLevels.value = cartoonLvls
+                //bg.uColors.value = liquid.colors.map(c => new THREE.Vector3(...new THREE.Color(c.value).toArray()))
+                //bg.uColorIntensities.value = liquid.colors.map(c => c.intensity)
+                //bg.uNumColors.value = liquid.colors.length
+                //bg.uIntensity.value = liquid.intensity
+                //bg.uLevel.value = liquid.level
+                //bg.uSeed.value = liquid.seed
+                //bg.uYBias.value = liquid.yBias
             }
         })
 
         return (
-            <group rotation={[0, Math.PI / 3, 0]}>
-                <mesh
-                    recieveShadow
-                    castShadow
-                    ref={backgroundRef}
-                    rotation={[0, Math.PI, 0]}
-                    position={[0, 0, 5]} // Placé en arrière
-                    scale={[5, 5, 1]} // Grand pour couvrir le champ de la caméra
-                >
-                    <planeGeometry args={[1, 1]}/>
-                    <warpMaterialModel ref={matRefBackground}/>
-                </mesh>
+            <group rotation={[0, 0, 0]}>
+
                 <mesh
                     recieveShadow
                     castShadow
@@ -338,7 +328,7 @@ export default function App() {
         setLiquid(l => ({
             ...l,
             colors: [
-                {id: 1, value: "#000", intensity: 2},
+                {id: 0, value: "#000", intensity: 2},
                 ...l.colors.slice(1, l.colors.length).map(c => ({
                     ...c,
                     value: getRandomColor()
@@ -528,7 +518,6 @@ export default function App() {
                     glRef.current = gl
                     sceneRef.current = scene
                     cameraRef.current = camera
-                    gl.setClearColor('#ffea82')
                 }}
                 orthographic
                 camera={{
@@ -543,7 +532,7 @@ export default function App() {
                 }}
             >
                 <ambientLight castShadow intensity={5}/>
-                <directionalLight castShadow intensity={5} color={'blue'} position={[0, 10, -1]}/>
+                <directionalLight castShadow intensity={20} color={'blue'} position={[0, 10, -1]}/>
                 <directionalLight castShadow intensity={20} color={'white'} position={[0, 1, -1]}/>
                 <OrbitControls/>
                 <Scene/>
