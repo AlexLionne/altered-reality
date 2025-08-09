@@ -1,4 +1,4 @@
-import React, {useRef, useState} from 'react'
+import React, {useEffect, useRef, useState} from 'react'
 import {Canvas, extend, useFrame, useThree} from '@react-three/fiber'
 import {OrbitControls, useGLTF} from '@react-three/drei'
 import * as THREE from 'three'
@@ -80,7 +80,9 @@ function hslToRgb(h, s, l) {
 }
 
 export default function App() {
+    const params = new URLSearchParams(window.location.search);
     // ——— États liquides & couleurs ———
+
     const [liquid, setLiquid] = useState({
         colors: settings,
         intensity: 2,
@@ -128,6 +130,16 @@ export default function App() {
         })
     }
 
+    useEffect(() => {
+        if (params.get('type')) {
+            const type = parseInt(params.get('type'))
+            if (type === 1) {
+                randomizeColors(0.5)
+            } else {
+                randomizeColors(2)
+            }
+        }
+    }, []);
     // ——— États shader ———
     const [dx, setDx] = useState(1)
     const [dy, setDy] = useState(1)
@@ -145,10 +157,9 @@ export default function App() {
     const timeOffset = useRef(300)
     // export
     const isExportingVideo = useRef(false)
-    const exportBaseTime = useRef(7700)
+    const exportBaseTime = useRef(params.get('seed'))
     const exportFrame = useRef(0)
 
-    console.log(exportBaseTime?.current)
     // ——— Hook GUI ———
     useGUI(gui => {
         // Shader controls
@@ -206,7 +217,10 @@ export default function App() {
             // Fond pattern
             if (matRef2.current && matRef.current) {
 
-                glRef.current && glRef.current.setClearColor(lightenHexColor(liquid.colors[1].value, 0.5 ),1)
+                let ratio = 1
+                const type = parseInt(params.get('type'))
+                if (type === 1) ratio = 0.2
+                glRef.current && glRef.current.setClearColor(lightenHexColor(liquid.colors[1].value, 0.5 ),ratio)
 
                 const outfit = matRef2.current.uniforms
                 const v = matRef.current.uniforms
@@ -320,14 +334,14 @@ export default function App() {
     const sceneRef = useRef()
     const cameraRef = useRef()
     const imageCount = useRef(0)
-    const randomizeColors = () => {
-        exportBaseTime.current = Math.random() * 100000
+    const randomizeColors = (intensity = 2) => {
         setLiquid(l => ({
             ...l,
             colors: [
                 {id: 0, value: "#000", intensity: 2},
                 ...l.colors.slice(1, l.colors.length).map(c => ({
                     ...c,
+                    intensity: intensity,
                     value: getRandomColor()
                 }))]
         }))

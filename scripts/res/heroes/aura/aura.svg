@@ -1,0 +1,140 @@
+<svg width="2048" height="2048" viewBox="0 0 2048 2048" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect x="960" y="64" width="64" height="64" fill="white" fill-opacity="0.3"/>
+<rect x="896" y="64" width="64" height="64" fill="white" fill-opacity="0.3"/>
+<rect x="1024" y="64" width="64" height="64" fill="white" fill-opacity="0.3"/>
+<rect x="1088" y="64" width="64" height="64" fill="white" fill-opacity="0.3"/>
+<rect x="1152" y="128" width="64" height="64" fill="white" fill-opacity="0.3"/>
+<rect x="1216" y="128" width="64" height="64" fill="white" fill-opacity="0.3"/>
+<rect x="1280" y="192" width="64" height="64" fill="white" fill-opacity="0.3"/>
+<rect x="1344" y="256" width="64" height="64" fill="white" fill-opacity="0.3"/>
+<rect x="1408" y="320" width="64" height="64" fill="white" fill-opacity="0.3"/>
+<rect x="1472" y="384" width="64" height="64" fill="white" fill-opacity="0.3"/>
+<rect x="1472" y="448" width="64" height="64" fill="white" fill-opacity="0.3"/>
+<rect x="1536" y="512" width="64" height="64" fill="white" fill-opacity="0.3"/>
+<rect x="1536" y="576" width="64" height="64" fill="white" fill-opacity="0.3"/>
+<rect x="1536" y="640" width="64" height="64" fill="white" fill-opacity="0.3"/>
+<rect x="1536" y="704" width="64" height="64" fill="white" fill-opacity="0.3"/>
+<rect x="1536" y="768" width="64" height="64" fill="white" fill-opacity="0.3"/>
+<rect x="1536" y="832" width="64" height="64" fill="white" fill-opacity="0.3"/>
+<rect x="1536" y="896" width="64" height="64" fill="white" fill-opacity="0.3"/>
+<rect x="1472" y="960" width="64" height="64" fill="white" fill-opacity="0.3"/>
+<rect x="1472" y="1024" width="64" height="64" fill="white" fill-opacity="0.3"/>
+<rect x="1472" y="1088" width="64" height="64" fill="white" fill-opacity="0.3"/>
+<rect x="1408" y="1152" width="64" height="64" fill="white" fill-opacity="0.3"/>
+<rect x="1408" y="1216" width="64" height="64" fill="white" fill-opacity="0.3"/>
+<rect x="1344" y="1280" width="64" height="64" fill="white" fill-opacity="0.3"/>
+<rect x="1344" y="1344" width="64" height="64" fill="white" fill-opacity="0.3"/>
+<rect x="1408" y="1344" width="64" height="64" fill="white" fill-opacity="0.3"/>
+<rect x="1472" y="1408" width="64" height="64" fill="white" fill-opacity="0.3"/>
+<rect x="1536" y="1408" width="64" height="64" fill="white" fill-opacity="0.3"/>
+<rect x="1600" y="1472" width="64" height="64" fill="white" fill-opacity="0.3"/>
+<rect x="1664" y="1536" width="64" height="64" fill="white" fill-opacity="0.3"/>
+<rect x="1728" y="1600" width="64" height="64" fill="white" fill-opacity="0.3"/>
+<rect x="1792" y="1664" width="64" height="64" fill="white" fill-opacity="0.3"/>
+<rect x="1856" y="1792" width="64" height="64" fill="white" fill-opacity="0.3"/>
+<rect x="1920" y="1856" width="64" height="64" fill="white" fill-opacity="0.3"/>
+<rect x="1920" y="1920" width="64" height="64" fill="white" fill-opacity="0.3"/>
+<rect x="1920" y="1984" width="64" height="64" fill="white" fill-opacity="0.3"/>
+<rect x="1856" y="1728" width="64" height="64" fill="white" fill-opacity="0.3"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 896 128)" fill="white" fill-opacity="0.3"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 832 128)" fill="white" fill-opacity="0.3"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 768 192)" fill="white" fill-opacity="0.3"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 704 256)" fill="white" fill-opacity="0.3"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 640 320)" fill="white" fill-opacity="0.3"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 576 384)" fill="white" fill-opacity="0.3"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 576 448)" fill="white" fill-opacity="0.3"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 512 512)" fill="white" fill-opacity="0.3"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 512 576)" fill="white" fill-opacity="0.3"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 512 640)" fill="white" fill-opacity="0.3"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 512 704)" fill="white" fill-opacity="0.3"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 512 768)" fill="white" fill-opacity="0.3"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 512 832)" fill="white" fill-opacity="0.3"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 512 896)" fill="white" fill-opacity="0.3"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 576 960)" fill="white" fill-opacity="0.3"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 576 1024)" fill="white" fill-opacity="0.3"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 576 1088)" fill="white" fill-opacity="0.3"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 640 1152)" fill="white" fill-opacity="0.3"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 640 1216)" fill="white" fill-opacity="0.3"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 704 1280)" fill="white" fill-opacity="0.3"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 704 1344)" fill="white" fill-opacity="0.3"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 640 1344)" fill="white" fill-opacity="0.3"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 576 1408)" fill="white" fill-opacity="0.3"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 512 1408)" fill="white" fill-opacity="0.3"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 448 1472)" fill="white" fill-opacity="0.3"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 384 1536)" fill="white" fill-opacity="0.3"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 320 1600)" fill="white" fill-opacity="0.3"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 256 1664)" fill="white" fill-opacity="0.3"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 192 1792)" fill="white" fill-opacity="0.3"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 128 1856)" fill="white" fill-opacity="0.3"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 128 1920)" fill="white" fill-opacity="0.3"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 128 1984)" fill="white" fill-opacity="0.3"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 192 1728)" fill="white" fill-opacity="0.3"/>
+<rect x="832" y="192" width="64" height="64" fill="white" fill-opacity="0.5"/>
+<rect x="768" y="192" width="64" height="64" fill="white" fill-opacity="0.5"/>
+<rect x="960" y="128" width="64" height="64" fill="white" fill-opacity="0.5"/>
+<rect x="896" y="128" width="64" height="64" fill="white" fill-opacity="0.5"/>
+<rect x="1088" y="128" width="64" height="64" fill="white" fill-opacity="0.5"/>
+<rect x="1024" y="128" width="64" height="64" fill="white" fill-opacity="0.5"/>
+<rect x="704" y="256" width="64" height="64" fill="white" fill-opacity="0.5"/>
+<rect x="640" y="320" width="64" height="64" fill="white" fill-opacity="0.5"/>
+<rect x="576" y="384" width="64" height="64" fill="white" fill-opacity="0.5"/>
+<rect x="576" y="448" width="64" height="64" fill="white" fill-opacity="0.5"/>
+<rect x="512" y="512" width="64" height="64" fill="white" fill-opacity="0.5"/>
+<rect x="512" y="576" width="64" height="64" fill="white" fill-opacity="0.5"/>
+<rect x="512" y="640" width="64" height="64" fill="white" fill-opacity="0.5"/>
+<rect x="512" y="704" width="64" height="64" fill="white" fill-opacity="0.5"/>
+<rect x="512" y="768" width="64" height="64" fill="white" fill-opacity="0.5"/>
+<rect x="512" y="832" width="64" height="64" fill="white" fill-opacity="0.5"/>
+<rect x="512" y="896" width="64" height="64" fill="white" fill-opacity="0.5"/>
+<rect x="576" y="960" width="64" height="64" fill="white" fill-opacity="0.5"/>
+<rect x="576" y="1024" width="64" height="64" fill="white" fill-opacity="0.5"/>
+<rect x="576" y="1088" width="64" height="64" fill="white" fill-opacity="0.5"/>
+<rect x="640" y="1152" width="64" height="64" fill="white" fill-opacity="0.5"/>
+<rect x="640" y="1216" width="64" height="64" fill="white" fill-opacity="0.5"/>
+<rect x="704" y="1280" width="64" height="64" fill="white" fill-opacity="0.5"/>
+<rect x="704" y="1344" width="64" height="64" fill="white" fill-opacity="0.5"/>
+<rect x="640" y="1408" width="64" height="64" fill="white" fill-opacity="0.5"/>
+<rect x="576" y="1408" width="64" height="64" fill="white" fill-opacity="0.5"/>
+<rect x="512" y="1472" width="64" height="64" fill="white" fill-opacity="0.5"/>
+<rect x="448" y="1472" width="64" height="64" fill="white" fill-opacity="0.5"/>
+<rect x="384" y="1536" width="64" height="64" fill="white" fill-opacity="0.5"/>
+<rect x="320" y="1600" width="64" height="64" fill="white" fill-opacity="0.5"/>
+<rect x="256" y="1664" width="64" height="64" fill="white" fill-opacity="0.5"/>
+<rect x="192" y="1728" width="64" height="64" fill="white" fill-opacity="0.5"/>
+<rect x="192" y="1792" width="64" height="64" fill="white" fill-opacity="0.5"/>
+<rect x="128" y="1856" width="64" height="64" fill="white" fill-opacity="0.5"/>
+<rect x="128" y="1920" width="64" height="64" fill="white" fill-opacity="0.5"/>
+<rect x="128" y="1984" width="64" height="64" fill="white" fill-opacity="0.5"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1216 192)" fill="white" fill-opacity="0.5"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1280 192)" fill="white" fill-opacity="0.5"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1344 256)" fill="white" fill-opacity="0.5"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1408 320)" fill="white" fill-opacity="0.5"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1472 384)" fill="white" fill-opacity="0.5"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1472 448)" fill="white" fill-opacity="0.5"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1536 512)" fill="white" fill-opacity="0.5"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1536 576)" fill="white" fill-opacity="0.5"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1536 640)" fill="white" fill-opacity="0.5"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1536 704)" fill="white" fill-opacity="0.5"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1536 768)" fill="white" fill-opacity="0.5"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1536 832)" fill="white" fill-opacity="0.5"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1536 896)" fill="white" fill-opacity="0.5"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1472 960)" fill="white" fill-opacity="0.5"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1472 1024)" fill="white" fill-opacity="0.5"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1472 1088)" fill="white" fill-opacity="0.5"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1408 1152)" fill="white" fill-opacity="0.5"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1408 1216)" fill="white" fill-opacity="0.5"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1344 1280)" fill="white" fill-opacity="0.5"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1344 1344)" fill="white" fill-opacity="0.5"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1408 1408)" fill="white" fill-opacity="0.5"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1472 1408)" fill="white" fill-opacity="0.5"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1536 1472)" fill="white" fill-opacity="0.5"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1600 1472)" fill="white" fill-opacity="0.5"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1664 1536)" fill="white" fill-opacity="0.5"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1728 1600)" fill="white" fill-opacity="0.5"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1792 1664)" fill="white" fill-opacity="0.5"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1856 1728)" fill="white" fill-opacity="0.5"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1856 1792)" fill="white" fill-opacity="0.5"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1920 1856)" fill="white" fill-opacity="0.5"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1920 1920)" fill="white" fill-opacity="0.5"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1920 1984)" fill="white" fill-opacity="0.5"/>
+</svg>

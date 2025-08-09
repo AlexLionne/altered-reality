@@ -4,8 +4,9 @@ import {fileURLToPath} from 'url';
 import {createCanvas, loadImage} from 'canvas';
 import fs from 'fs';
 import sharp from "sharp";
-import { randomInt } from "crypto";
+import {randomInt} from "crypto";
 import OpenAI from "openai";
+
 const client = new OpenAI({
     apiKey: "",
     baseURL: "https://api.x.ai/v1",
@@ -14,10 +15,12 @@ const client = new OpenAI({
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-function oneInX(x) {
+
+function oneIn(x) {
     if (!Number.isInteger(x) || x <= 0) throw new Error("x entier > 0");
     return randomInt(0, x) === 0;
 }
+
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 (async () => {
     const browser = await puppeteer.launch({
@@ -26,13 +29,12 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
         args: ['--no-sandbox', '--disable-setuid-sandbox', '--window-size=1400,900'],
     });
 
-
-
-
+    const seed = randomInt(0, 100_000)
     // { headless: false } si tu veux voir le navigateur
     const page = await browser.newPage();
 
-    //await page.goto('http://localhost:5175', { waitUntil: 'networkidle0' })
+    const query = `?seed=${seed}&type=1`
+    await page.goto(`http://localhost:5175&${query}`, { waitUntil: 'networkidle0' })
 
     await page.goto('https://moshpro.app/lite/');
 
@@ -90,9 +92,9 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 const generateArt = async () => {
 
-    const eyesIndex = randomInt(1, 5);
+    const eyesIndex = randomInt(0, 4);
+    const hasAura = oneIn(1000);
 
-    console.log(eyesIndex)
     const image = await loadImage(path.join(__dirname, './uploads/ez.png'));
     const mask = await loadImage(path.join(__dirname, './res/common/mask.svg'));
     const heart = await loadImage(path.join(__dirname, './res/common/heart.svg'));
@@ -101,16 +103,39 @@ const generateArt = async () => {
     const naked = await loadImage(path.join(__dirname, './res/heroes/body/naked.svg'));
     // mask def
     const maskOne = await loadImage(path.join(__dirname, './res/heroes/mask/mask_1.svg'));
+    const heroAura = await loadImage(path.join(__dirname, './res/heroes/aura/aura.svg'));
     // eyes
     const eyes_1 = await loadImage(path.join(__dirname, './res/common/eyes_1.svg'));
     const eyes_2 = await loadImage(path.join(__dirname, './res/common/eyes_2.svg'));
     const eyes_3 = await loadImage(path.join(__dirname, './res/common/eyes_3.svg'));
     const eyes_4 = await loadImage(path.join(__dirname, './res/common/eyes_4.svg'));
     const eyes_5 = await loadImage(path.join(__dirname, './res/common/eyes_5.svg'));
+    // glasses
+    const glasses_1 = await loadImage(path.join(__dirname, './res/common/glasses_1.svg'));
+    const glasses_2 = await loadImage(path.join(__dirname, './res/common/glasses_2.svg'));
+    const glasses_3 = await loadImage(path.join(__dirname, './res/common/glasses_3.svg'));
+    const glasses_4 = await loadImage(path.join(__dirname, './res/common/glasses_4.svg'));
+    const glasses_5 = await loadImage(path.join(__dirname, './res/common/glasses_5.svg'));
+    const glasses_6 = await loadImage(path.join(__dirname, './res/common/glasses_6.svg'));
+    const glasses_7 = await loadImage(path.join(__dirname, './res/common/glasses_7.svg'));
+    const glasses_8 = await loadImage(path.join(__dirname, './res/common/glasses_8.svg'));
+    const glasses_9 = await loadImage(path.join(__dirname, './res/common/glasses_9.svg'));
+
 
     const common = {
         mask,
         heart,
+        glasses: [
+            glasses_1,
+            glasses_2,
+            glasses_3,
+            glasses_4,
+            glasses_5,
+            glasses_6,
+            glasses_7,
+            glasses_8,
+            glasses_9
+        ],
         eyes: [
             eyes_1,
             eyes_2,
@@ -120,6 +145,7 @@ const generateArt = async () => {
         ]
     }
     const hero = {
+        heroAura,
         naked,
         neck,
         maskOne
@@ -132,11 +158,29 @@ const generateArt = async () => {
     ctx.drawImage(image, 0, 0);
 
 // Dessiner par-dessus ton image personnalisée (même taille ou repositionnée)
-    ctx.drawImage(common.mask,  192,  192, 1664, 1856);
+    ctx.drawImage(common.mask, 192, 192, 1664, 1856);
     ctx.drawImage(hero.naked, 0, 0, 2048, 2048);
     ctx.drawImage(common.heart, 0, 0, 2048, 2048);
     ctx.drawImage(hero.maskOne, 0, 0, 2048, 2048);
     ctx.drawImage(common.eyes[eyesIndex], 0, 0, 2048, 2048);
+
+    if (hasAura) {
+        ctx.drawImage(hero.heroAura, 0, 0, 2048, 2048);
+    }
+
+    const hasGlasses = oneIn(2);
+
+    if (hasGlasses) {
+        const glassesIndex = randomInt(0, 5);
+        if (glassesIndex === 4 || glassesIndex === 3) {
+            const hasBoth = oneIn(2);
+            if (hasBoth) {
+                ctx.drawImage(common.glasses[3], 0, 0, 2048, 2048);
+                ctx.drawImage(common.glasses[4], 0, 0, 2048, 2048);
+            }
+        }
+        ctx.drawImage(common.glasses[glassesIndex], 0, 0, 2048, 2048);
+    }
 
 // Sauvegarder le rendu
     const outpath = path.join(__dirname, './outputs/final.png');
@@ -183,11 +227,11 @@ const data = {
     date: '2021-01-02',
     seed: 7700,
     values: [
-        { id: 1, value: '#2979FF', intensity: 1.9, impact: 0.5 },
-        { id: 2, value: '#FF80AB', intensity: 1.7, impact: 0.8 },
-        { id: 3, value: '#FF6D00', intensity: 1.5, impact: 1 },
-        { id: 4, value: '#7C4DFF', intensity: 1.4, impact: 0.9 },
-        { id: 5, value: '#FFFF00', intensity: 1.2, impact: 0.7 }
+        {id: 1, value: '#2979FF', intensity: 1.9, impact: 0.5},
+        {id: 2, value: '#FF80AB', intensity: 1.7, impact: 0.8},
+        {id: 3, value: '#FF6D00', intensity: 1.5, impact: 1},
+        {id: 4, value: '#7C4DFF', intensity: 1.4, impact: 0.9},
+        {id: 5, value: '#FFFF00', intensity: 1.2, impact: 0.7}
     ]
 }
 
