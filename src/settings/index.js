@@ -62,19 +62,9 @@ const colors = {
 }
 
 export const settings = [
-    {"id": 1, "value": "#FF0000", "intensity": 2},
-    {"id": 2, "value": "#FFC0CB", "intensity": 2},
-    {"id": 3, "value": "#800080", "intensity": 2},
-    {"id": 4, "value": "#00008B", "intensity": 2},
-    {"id": 5, "value": "#8B0000", "intensity": 2},
-    {"id": 6, "value": "#FFFF00", "intensity": 2},
-    {"id": 7, "value": "#006400", "intensity": 2},
-    {"id": 8, "value": "#008000", "intensity": 2},
-    {"id": 9, "value": "#4B0082", "intensity": 2},
-    {"id": 10, "value": "#0000FF", "intensity": 2},
-    {"id": 11, "value": "#FF4500", "intensity": 2},
-    {"id": 12, "value": "#808080", "intensity": 2},
-    {"id": 13, "value": "#FFD700", "intensity": 2},
-    {"id": 14, "value": "#A52A2A", "intensity": 2},
-    {"id": 15, "value": "#000000", "intensity": 2}
+    { id: 1, value: '#2979FF', intensity: 1.9, impact: 0.5 },
+    { id: 2, value: '#FF80AB', intensity: 1.7, impact: 0.8 },
+    { id: 3, value: '#FF6D00', intensity: 1.5, impact: 1 },
+    { id: 4, value: '#7C4DFF', intensity: 1.4, impact: 0.9 },
+    { id: 5, value: '#FFFF00', intensity: 1.2, impact: 0.7 }
 ]

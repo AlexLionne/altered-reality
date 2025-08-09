@@ -42,11 +42,20 @@ const getRandomColor = () => {
     const h = Math.floor(Math.random() * 360);
     const s = 100;
     const l = 50;
-    const rgb = hslToRgb(h / 360, s / 100, l / 100);
+    const rgb = hslToRgbWithIntensity(h / 360, s / 100, l / 100, 2);
     return '#' + rgb.map(x => x.toString(16).padStart(2, '0')).join('');
 };
 
+function hslToRgbWithIntensity(h, s, l, intensity = 1) {
+    // Clamp intensity entre 0 et 1
+    intensity = Math.max(0, Math.min(1, intensity))
 
+    // Appliquer l'intensité à saturation et luminosité
+    s *= intensity
+    l = l * (1 - intensity) + 0.5 * intensity  // Tire vers 0.5 à haute intensité
+
+    return hslToRgb(h, s, l)
+}
 function hslToRgb(h, s, l) {
     let r, g, b
     if (s === 0) {
@@ -60,6 +69,7 @@ function hslToRgb(h, s, l) {
             if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6
             return p
         }
+        //Y?vmrCD!Y@K7$-L
         const q = l < 0.5 ? l * (1 + s) : l + s - l * s
         const p = 2 * l - q
         r = hue2rgb(p, q, h + 1 / 3)
@@ -72,10 +82,7 @@ function hslToRgb(h, s, l) {
 export default function App() {
     // ——— États liquides & couleurs ———
     const [liquid, setLiquid] = useState({
-        colors: [
-            {id: 0, value: "#000", intensity: 2},
-            ...settings.slice(0, 5)
-        ],
+        colors: settings,
         intensity: 2,
         level: 2,
         seed: 0,
@@ -138,9 +145,10 @@ export default function App() {
     const timeOffset = useRef(300)
     // export
     const isExportingVideo = useRef(false)
-    const exportBaseTime = useRef(0)
+    const exportBaseTime = useRef(7700)
     const exportFrame = useRef(0)
 
+    console.log(exportBaseTime?.current)
     // ——— Hook GUI ———
     useGUI(gui => {
         // Shader controls
@@ -189,33 +197,22 @@ export default function App() {
         const {camera} = useThree()
         const meshRef = useRef()
         const mesh2Ref = useRef()
-        const backgroundRef = useRef()
-        const matRefBackground = useRef() // Ref pour le matériau du fond
         const {nodes} = useGLTF('/model.glb')
         const {nodes: nodes2} = useGLTF('/untitled.glb')
         const {nodes: nodes3} = useGLTF('/skull.glb')
 
-        useFrame((state, delta) => {
+        useFrame((state) => {
 
             // Fond pattern
             if (matRef2.current && matRef.current) {
 
-                glRef.current && glRef.current.setClearColor(lightenHexColor(liquid.colors[1].value, .7 ),1)
+                glRef.current && glRef.current.setClearColor(lightenHexColor(liquid.colors[1].value, 0.5 ),1)
 
                 const outfit = matRef2.current.uniforms
                 const v = matRef.current.uniforms
-                //const bg = matRefBackground.current.uniforms // Uniforms du fond
-                /*
-                const elapsed = isExportingVideo.current
 
-                ? exportBaseTime.current + exportFrame.current / fps
-                : performance.now() / 1000
-                u.uTime.value = elapsed
-                v.uTime.value = elapsed
-                */
                 outfit.uTime.value = exportBaseTime.current
                 v.uTime.value = exportBaseTime.current
-                //bg.uTime.value = exportBaseTime.current
 
                 outfit.uPixelSize.value = pixelSize
                 v.uPixelSize.value = pixelSize
@@ -338,7 +335,7 @@ export default function App() {
 
     const runExport = () => {
         const interval = setInterval(() => {
-            if (imageCount.current >= 1000) {
+            if (imageCount.current >= 10) {
                 clearInterval(interval)
                 return
             }
@@ -499,7 +496,7 @@ export default function App() {
         const dataURL = canvas.toDataURL('image/jpeg', 1.0)
         const link = document.createElement('a')
         link.href = dataURL
-        link.download = `${Math.random().toString().slice(2, 10)}.jpg`
+        link.download = `${imageCount.current}.jpg`
         link.click()
 
         // Nettoyage

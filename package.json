@@ -4,22 +4,27 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "agent": "node src/agent/index.js",
+    "agent": "node scripts/agent.js",
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy": "zx scripts/deploy.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.5.1",
     "@react-three/fiber": "^9.2.0",
     "@react-three/postprocessing": "^3.0.4",
     "canvas": "^3.1.2",
+    "crypto": "^1.0.1",
+    "imagetracer": "^0.2.2",
     "lil-gui": "^0.20.0",
+    "openai": "^5.12.1",
     "postprocessing": "^6.37.6",
     "puppeteer": "^24.15.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "sharp": "^0.34.3",
     "three": "^0.178.0"
   },
   "devDependencies": {
@@ -31,6 +36,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^16.3.0",
-    "vite": "^7.0.4"
+    "vite": "^7.0.4",
+    "zx": "^8.8.0"
   }
 }
