@@ -157,7 +157,7 @@ export default function App() {
     const timeOffset = useRef(300)
     // export
     const isExportingVideo = useRef(false)
-    const exportBaseTime = useRef(params.get('seed'))
+    const exportBaseTime = useRef(Math.random() * 10000)
     const exportFrame = useRef(0)
 
     // ——— Hook GUI ———
@@ -176,7 +176,8 @@ export default function App() {
             .onChange(setBrightness)
         gui.add({pixelSize}, 'pixelSize', 0, 8, 1).name('Pixel Size').onChange(setPixelSize)
         gui.add({randomizeColors}, 'randomizeColors').name('Random')
-        gui.add({exportSceneAsJPG}, 'exportSceneAsJPG').name('Exporter')
+        const controller = gui.add({ exportSceneAsJPG }, 'exportSceneAsJPG').name('Exporter');
+        controller.domElement.querySelector('button').id = 'export-button';
         gui.add({runExport}, 'runExport').name('Exporter 100')
         gui.add({startExportVideo}, 'startExportVideo').name('Video Exporter')
 
@@ -217,7 +218,7 @@ export default function App() {
             // Fond pattern
             if (matRef2.current && matRef.current) {
 
-                let ratio = 1
+                let ratio = 2
                 const type = parseInt(params.get('type'))
                 if (type === 1) ratio = 0.2
                 glRef.current && glRef.current.setClearColor(lightenHexColor(liquid.colors[1].value, 0.5 ),ratio)

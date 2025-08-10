@@ -24,85 +24,115 @@ function oneIn(x) {
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 (async () => {
     const browser = await puppeteer.launch({
-        headless: false,
+        headless: true,
         defaultViewport: null,
         args: ['--no-sandbox', '--disable-setuid-sandbox', '--window-size=1400,900'],
     });
 
-    const seed = randomInt(0, 100_000)
     // { headless: false } si tu veux voir le navigateur
     const page = await browser.newPage();
 
-    const query = `?seed=${seed}&type=1`
-    await page.goto(`http://localhost:5175&${query}`, { waitUntil: 'networkidle0' })
+    const query = `?type=2`
 
-    await page.goto('https://moshpro.app/lite/');
+    const generateAsset = async (batch) => {
+        await page.evaluate(() => {
+            const input = document.querySelector('#export-button');
+            input && input.click()
+        });
 
-    const title = await page.title();
-    console.log('Titre de la page:', title);
+        await wait(3000)
+        await page.goto('https://moshpro.app/lite/');
+        const file = await getLastModifiedFile(path.join(__dirname, '../../../../Downloads'))
 
-    const filePath = path.resolve(path.join(__dirname, './uploads/1.jpg'));
+        const filePath = path.resolve(path.join(__dirname, '../../../../Downloads', file));
+        const input = await page.waitForSelector('#file-input');
+        await input.uploadFile(filePath);
+        await page.evaluate(() => {
+            const elements = [...document.querySelectorAll('div')];
+            const target = elements.find(el => el.textContent.trim() === 'Pixelate');
+            if (target) target.click();
+        });
+        await wait(1000);
 
-    const input = await page.waitForSelector('#file-input');
-    await input.uploadFile(filePath);
-    await page.evaluate(() => {
-        const elements = [...document.querySelectorAll('div')];
-        const target = elements.find(el => el.textContent.trim() === 'Pixelate');
-        if (target) target.click();
-    });
-    await wait(1000);
+        await page.evaluate(() => {
+            const input = document.querySelector('[aria-labelledby="lil-gui-name-1"]');
+            input.click()
+        });
+        await wait(300);
 
-    await page.evaluate(() => {
-        const input = document.querySelector('[aria-labelledby="lil-gui-name-1"]');
-        input.click()
-    });
-    await wait(300);
-
-    await page.evaluate(() => {
-        const input = document.querySelector('input[aria-labelledby="lil-gui-name-2"]');
-        if (input) input.value = '';
-    });
-    await wait(300);
-    await page.evaluate(() => {
-        const input = document.querySelector('input[aria-labelledby="lil-gui-name-3"]');
-        if (input) input.value = '';
-    });
-    await wait(300);
-    await page.type('[aria-labelledby="lil-gui-name-2"]', "32");
-    await wait(300);
-    await page.type('[aria-labelledby="lil-gui-name-3"]', "32");
-    await wait(300);
+        await page.evaluate(() => {
+            const input = document.querySelector('input[aria-labelledby="lil-gui-name-2"]');
+            if (input) input.value = '';
+        });
+        await wait(300);
+        await page.evaluate(() => {
+            const input = document.querySelector('input[aria-labelledby="lil-gui-name-3"]');
+            if (input) input.value = '';
+        });
+        await wait(300);
+        await page.type('[aria-labelledby="lil-gui-name-2"]', "32");
+        await wait(300);
+        await page.type('[aria-labelledby="lil-gui-name-3"]', "32");
+        await wait(300);
 
 
-    // Extraire les données du canvas
-    const dataUrl = await page.evaluate(() => {
-        const canvas = document.querySelector('canvas');
-        return canvas.toDataURL('image/png');
-    });
+        // Extraire les données du canvas
+        const dataUrl = await page.evaluate(() => {
+            const canvas = document.querySelector('canvas');
+            return canvas.toDataURL('image/png');
+        });
 
-    // Supprimer le préfixe 'data:image/png;base64,' pour convertir
-    const base64Data = dataUrl.replace(/^data:image\/png;base64,/, '');
+        // Supprimer le préfixe 'data:image/png;base64,' pour convertir
+        const base64Data = dataUrl.replace(/^data:image\/png;base64,/, '');
 
-    // Sauvegarder dans un fichier
-    fs.writeFileSync(path.join(__dirname, './uploads/ez.png'), base64Data, 'base64');
-    await generateArt()
+        // Sauvegarder dans un fichier
+        fs.writeFileSync(path.join(__dirname, `./uploads/${batch}.png`), base64Data, 'base64');
+        await generateArt(batch)
+    }
+
+    for (let i = 0; i < 100; i++) {
+        await page.goto(`http://localhost:5175/${query}`, { waitUntil: 'networkidle0' })
+        await wait(3000)
+        await generateAsset(i)
+    }
     await browser.close();
 })();
 
 
-const generateArt = async () => {
+const generateArt = async (name) => {
 
-    const eyesIndex = randomInt(0, 4);
+    const eyesIndex = randomInt(0, 10);
+    const headIndex = randomInt(0, 8);
+    const glassesIndex = randomInt(0, 9);
+    const maskIndex = randomInt(0, 9);
+
+    const isNaked = oneIn(100);
+    const isNeck = oneIn(10);
+    const hasHeart = oneIn(50);
     const hasAura = oneIn(1000);
+    const hasMaskType = oneIn(1);
+    const hasGlasses = oneIn(2);
 
-    const image = await loadImage(path.join(__dirname, './uploads/ez.png'));
+    const image = await loadImage(path.join(__dirname, `./uploads/${name}.png`));
     const mask = await loadImage(path.join(__dirname, './res/common/mask.svg'));
     const heart = await loadImage(path.join(__dirname, './res/common/heart.svg'));
     // heroes
     const neck = await loadImage(path.join(__dirname, './res/heroes/body/neck.svg'));
     const naked = await loadImage(path.join(__dirname, './res/heroes/body/naked.svg'));
     // mask def
-    const maskOne = await loadImage(path.join(__dirname, './res/heroes/mask/mask_1.svg'));
+    const mask_1 = await loadImage(path.join(__dirname, './res/heroes/mask/mask_1.svg'));
+    const mask_2 = await loadImage(path.join(__dirname, './res/heroes/mask/mask_2.svg'));
+    const mask_3 = await loadImage(path.join(__dirname, './res/heroes/mask/mask_3.svg'));
+    const mask_4 = await loadImage(path.join(__dirname, './res/heroes/mask/mask_4.svg'));
+    //const mask_5 = await loadImage(path.join(__dirname, './res/heroes/mask/mask_5.svg'));
+    //const mask_6 = await loadImage(path.join(__dirname, './res/heroes/mask/mask_6.svg'));
+    const mask_7 = await loadImage(path.join(__dirname, './res/heroes/mask/mask_7.svg'));
+    const mask_8 = await loadImage(path.join(__dirname, './res/heroes/mask/mask_8.svg'));
+    const mask_9 = await loadImage(path.join(__dirname, './res/heroes/mask/mask_9.svg'));
+    const mask_10 = await loadImage(path.join(__dirname, './res/heroes/mask/mask_10.svg'));
+    const mask_11 = await loadImage(path.join(__dirname, './res/heroes/mask/mask_11.svg'));
+    const mask_12 = await loadImage(path.join(__dirname, './res/heroes/mask/mask_12.svg'));
+
     const heroAura = await loadImage(path.join(__dirname, './res/heroes/aura/aura.svg'));
     // eyes
     const eyes_1 = await loadImage(path.join(__dirname, './res/common/eyes_1.svg'));
@@ -110,6 +140,12 @@ const generateArt = async () => {
     const eyes_3 = await loadImage(path.join(__dirname, './res/common/eyes_3.svg'));
     const eyes_4 = await loadImage(path.join(__dirname, './res/common/eyes_4.svg'));
     const eyes_5 = await loadImage(path.join(__dirname, './res/common/eyes_5.svg'));
+    const eyes_6 = await loadImage(path.join(__dirname, './res/common/eyes_6.svg'));
+    const eyes_7 = await loadImage(path.join(__dirname, './res/common/eyes_7.svg'));
+    const eyes_8 = await loadImage(path.join(__dirname, './res/common/eyes_8.svg'));
+    const eyes_9 = await loadImage(path.join(__dirname, './res/common/eyes_9.svg'));
+    const eyes_10 = await loadImage(path.join(__dirname, './res/common/eyes_10.svg'));
+    const eyes_11 = await loadImage(path.join(__dirname, './res/common/eyes_11.svg'));
     // glasses
     const glasses_1 = await loadImage(path.join(__dirname, './res/common/glasses_1.svg'));
     const glasses_2 = await loadImage(path.join(__dirname, './res/common/glasses_2.svg'));
@@ -120,6 +156,18 @@ const generateArt = async () => {
     const glasses_7 = await loadImage(path.join(__dirname, './res/common/glasses_7.svg'));
     const glasses_8 = await loadImage(path.join(__dirname, './res/common/glasses_8.svg'));
     const glasses_9 = await loadImage(path.join(__dirname, './res/common/glasses_9.svg'));
+    const glasses_10 = await loadImage(path.join(__dirname, './res/common/glasses_10.svg'));
+
+    // heads
+    const head_1= await loadImage(path.join(__dirname, './res/heroes/head/head_1.svg'));
+    const head_2= await loadImage(path.join(__dirname, './res/heroes/head/head_2.svg'));
+    const head_3= await loadImage(path.join(__dirname, './res/heroes/head/head_3.svg'));
+    const head_4= await loadImage(path.join(__dirname, './res/heroes/head/head_4.svg'));
+    const head_5= await loadImage(path.join(__dirname, './res/heroes/head/head_5.svg'));
+    const head_6= await loadImage(path.join(__dirname, './res/heroes/head/head_6.svg'));
+    const head_7= await loadImage(path.join(__dirname, './res/heroes/head/head_7.svg'));
+    const head_8= await loadImage(path.join(__dirname, './res/heroes/head/head_8.svg'));
+    const head_9= await loadImage(path.join(__dirname, './res/heroes/head/head_9.svg'));
 
 
     const common = {
@@ -134,7 +182,8 @@ const generateArt = async () => {
             glasses_6,
             glasses_7,
             glasses_8,
-            glasses_9
+            glasses_9,
+            glasses_10
         ],
         eyes: [
             eyes_1,
@@ -142,36 +191,63 @@ const generateArt = async () => {
             eyes_3,
             eyes_4,
             eyes_5,
+            eyes_6,
+            eyes_7,
+            eyes_8,
+            eyes_9,
+            eyes_10,
+            eyes_11,
         ]
     }
     const hero = {
         heroAura,
         naked,
         neck,
-        maskOne
+        heads: [
+            head_1,
+            head_2,
+            head_3,
+            head_4,
+            head_5,
+            head_6,
+            head_7,
+            head_8,
+            head_9,
+        ],
+        masks: [
+            mask_1,
+            mask_2,
+            mask_3,
+            mask_4,
+            //mask_5,
+            //mask_6,
+            mask_7,
+            mask_8,
+            mask_9,
+            mask_10,
+            mask_11,
+            mask_12,
+        ],
     }
     // Créer le canvas avec les dimensions de base
     const canvas = createCanvas(2048, 2048);
     const ctx = canvas.getContext('2d');
 
-// Dessiner la première image
     ctx.drawImage(image, 0, 0);
-
-// Dessiner par-dessus ton image personnalisée (même taille ou repositionnée)
     ctx.drawImage(common.mask, 192, 192, 1664, 1856);
-    ctx.drawImage(hero.naked, 0, 0, 2048, 2048);
-    ctx.drawImage(common.heart, 0, 0, 2048, 2048);
-    ctx.drawImage(hero.maskOne, 0, 0, 2048, 2048);
     ctx.drawImage(common.eyes[eyesIndex], 0, 0, 2048, 2048);
+    ctx.drawImage(hero.heads[headIndex], 0, 0, 2048, 2048);
 
-    if (hasAura) {
-        ctx.drawImage(hero.heroAura, 0, 0, 2048, 2048);
-    }
+    hasAura && ctx.drawImage(hero.heroAura, 0, 0, 2048, 2048);
 
-    const hasGlasses = oneIn(2);
+    isNaked && ctx.drawImage(hero.naked, 0, 0, 2048, 2048);
+    isNeck && ctx.drawImage(hero.neck, 0, 0, 2048, 2048);
+    hasHeart && ctx.drawImage(common.heart, 0, 0, 2048, 2048);
+    hasMaskType && ctx.drawImage(hero.masks[maskIndex], 0, 0, 2048, 2048);
+
+
 
     if (hasGlasses) {
-        const glassesIndex = randomInt(0, 5);
         if (glassesIndex === 4 || glassesIndex === 3) {
             const hasBoth = oneIn(2);
             if (hasBoth) {
@@ -183,18 +259,18 @@ const generateArt = async () => {
     }
 
 // Sauvegarder le rendu
-    const outpath = path.join(__dirname, './outputs/final.png');
-    const out = fs.createWriteStream(outpath);
+    const inputPath = path.join(__dirname, `./outputs/${name}.png`);
+    const outpath = path.join(__dirname, `./outputs/${name}.svg`);
+    const out = fs.createWriteStream(inputPath);
     const stream = canvas.createPNGStream();
     stream.pipe(out);
     out.on('finish', async () => {
         console.log('✅ Image masquée enregistrée')
-
-        await generateArt2svg(outpath)
+        //await generateArt2svg(inputPath, outpath)
     });
 }
 
-const generateArt2svg = async (inputPath, outputPath = path.join(__dirname, './outputs/onchain.svg')) => {
+const generateArt2svg = async (inputPath, outputPath) => {
     const size = 32;
 
     // Redimensionne à 32x32 et récupère les pixels
@@ -324,3 +400,24 @@ export const prompt = "à partir dess thématiques les plus représentées par d
     "]\n" +
     "}\n" +
     "\n"
+async function getLastModifiedFile(dirPath) {
+    // Lire le contenu du dossier
+    const files = await fs.promises.readdir(dirPath);
+
+    if (files.length === 0) return null;
+
+    // Récupérer les stats de chaque fichier
+    const filesWithStats = await Promise.all(
+        files.map(async file => {
+            const filePath = path.join(dirPath, file);
+            const stats = await fs.promises.stat(filePath);
+            return { file, time: stats.mtime };
+        })
+    );
+
+    // Trier par date de modification (plus récent en premier)
+    filesWithStats.sort((a, b) => b.time - a.time);
+
+    // Retourner le nom du dernier fichier modifié
+    return filesWithStats[0].file;
+}
