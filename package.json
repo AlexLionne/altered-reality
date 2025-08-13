@@ -15,6 +15,7 @@
     "@react-three/drei": "^10.5.1",
     "@react-three/fiber": "^9.2.0",
     "@react-three/postprocessing": "^3.0.4",
+    "buffer": "^6.0.3",
     "canvas": "^3.1.2",
     "chroma-js": "^3.1.2",
     "crypto": "^1.0.1",

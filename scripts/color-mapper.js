@@ -7,8 +7,8 @@
 // mode 2 = Lightness identique (script précédent)
 
 import fs from 'fs';
-import path from 'path';
 import chroma from 'chroma-js';
+import {randomInt} from "crypto";
 
 const normHue = h => ((h % 360) + 360) % 360;
 
@@ -77,7 +77,11 @@ function replaceColorsWithHueShiftLCH(svgText, deltaDeg, mode) {
                     ['fill'].includes(k) &&
                     v !== 'none' && !v.startsWith('url(') && v !== 'currentColor' && !v.startsWith('var(')
                 ) {
-                    try { return `${k}:${shiftHueLCH(v, deltaDeg, mode)}`; } catch { return d; }
+                    try {
+                        return `${k}:${shiftHueLCH(v, deltaDeg, mode)}`;
+                    } catch {
+                        return d;
+                    }
                 }
                 return d;
             });
@@ -89,7 +93,11 @@ function replaceColorsWithHueShiftLCH(svgText, deltaDeg, mode) {
     svgText = svgText.replace(styleBlockRe, (m, open, css, close) => {
         const tokenRe = /(#(?:[0-9a-f]{3,8}))|((?:rgb|hsl)a?\([^()]*\))/gi;
         const replaced = css.replace(tokenRe, (tok) => {
-            try { return shiftHueLCH(tok, deltaDeg, mode); } catch { return tok; }
+            try {
+                return shiftHueLCH(tok, deltaDeg, mode);
+            } catch {
+                return tok;
+            }
         });
         return `${open}${replaced}${close}`;
     });
@@ -98,7 +106,7 @@ function replaceColorsWithHueShiftLCH(svgText, deltaDeg, mode) {
 }
 
 function ensureDir(dir) {
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, {recursive: true});
 }
 
 function parseArgs() {
@@ -110,42 +118,23 @@ function parseArgs() {
     let mode = 2;
 
     for (let i = 2; i < args.length; i++) {
-        if (args[i] === '--shift') { shift = parseFloat(args[i + 1]); i++; }
-        else if (args[i] === '--sweep') { sweep = parseFloat(args[i + 1]); i++; }
-        else if (args[i] === '--mode') { mode = parseInt(args[i + 1]); i++; }
-    }
-    return { inputPath, outDir, shift, sweep, mode };
-}
-
-async function main() {
-    const { inputPath, outDir, shift, sweep, mode } = parseArgs();
-    if (!inputPath || !outDir || (shift == null && sweep == null)) {
-        console.error('Usage :');
-        console.error('  node hue-rotate-svg-lch-modes.js input.svg outdir --mode 1 --shift 40');
-        console.error('  node hue-rotate-svg-lch-modes.js input.svg outdir --mode 2 --sweep 20');
-        process.exit(1);
-    }
-
-    const svg = fs.readFileSync(inputPath, 'utf8');
-    ensureDir(outDir);
-    const base = path.basename(inputPath, path.extname(inputPath));
-
-    if (shift != null) {
-        const outText = replaceColorsWithHueShiftLCH(svg, shift, mode);
-        const outPath = path.join(outDir, `${base}-lch-m${mode}-shift-${normHue(shift)}.svg`);
-        fs.writeFileSync(outPath, outText, 'utf8');
-        console.log('→', outPath);
-        return;
-    }
-
-    if (sweep != null) {
-        for (let h = 0; h < 360; h += sweep) {
-            const outText = replaceColorsWithHueShiftLCH(svg, h, mode);
-            const outPath = path.join(outDir, `${base}-lch-m${mode}-shift-${normHue(h)}.svg`);
-            fs.writeFileSync(outPath, outText, 'utf8');
-            console.log('→', outPath);
+        if (args[i] === '--shift') {
+            shift = parseFloat(args[i + 1]);
+            i++;
+        } else if (args[i] === '--sweep') {
+            sweep = parseFloat(args[i + 1]);
+            i++;
+        } else if (args[i] === '--mode') {
+            mode = parseInt(args[i + 1]);
+            i++;
         }
     }
+    return {inputPath, outDir, shift, sweep, mode};
 }
 
-main().catch(e => { console.error(e); process.exit(1); });
+export async function randomizeElementColor(inputPath, mode) {
+    const svg = fs.readFileSync(inputPath, 'utf8');
+
+    const sweep = randomInt(0, 18)
+    return replaceColorsWithHueShiftLCH(svg, sweep * 20, mode);
+}

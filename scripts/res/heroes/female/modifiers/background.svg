@@ -1,0 +1,18 @@
+<svg width="2048" height="2048" viewBox="0 0 2048 2048" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect x="640" y="1600" width="64" height="64" transform="rotate(180 640 1600)" fill="#000000"/>
+<rect x="320" y="1856" width="64" height="192" fill="#000000"/>
+<rect x="256" y="1856" width="64" height="192" fill="#000000"/>
+<rect x="384" y="1664" width="64" height="192" fill="#000000"/>
+<rect x="320" y="1664" width="64" height="192" fill="#000000"/>
+<rect x="512" y="1536" width="64" height="128" fill="#000000"/>
+<rect x="448" y="1536" width="64" height="192" fill="#000000"/>
+<rect x="768" y="1536" width="64" height="64" transform="rotate(180 768 1536)" fill="#000000"/>
+<path d="M1472 1600L1408 1600L1408 1536L1472 1536L1472 1600Z" fill="#000000"/>
+<rect width="64" height="191" transform="matrix(-1 0 0 1 1728 1857)" fill="#000000"/>
+<rect width="64" height="192" transform="matrix(-1 0 0 1 1792 1856)" fill="#000000"/>
+<rect width="64" height="192" transform="matrix(-1 0 0 1 1664 1664)" fill="#000000"/>
+<rect width="64" height="192" transform="matrix(-1 0 0 1 1728 1665)" fill="#000000"/>
+<rect width="64" height="128" transform="matrix(-1 0 0 1 1536 1536)" fill="#000000"/>
+<rect width="64" height="192" transform="matrix(-1 0 0 1 1600 1536)" fill="#000000"/>
+<rect width="64" height="64" transform="matrix(1 8.74228e-08 8.74228e-08 -1 1280 1536)" fill="#000000"/>
+</svg>
