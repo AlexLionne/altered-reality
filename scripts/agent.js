@@ -91,7 +91,7 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
         await generateArt(batch)
     }
 
-    for (let i = 0; i < 100; i++) {
+    for (let i = 0; i < 300; i++) {
         await page.goto(`http://localhost:5175/${query}`, {waitUntil: 'networkidle0'})
         await wait(3000)
         await generateAsset(i)
@@ -115,14 +115,12 @@ const generateArt = async (name, gender = 'female', type = 1) => {
         const hasHeart = oneIn(50);
         const hasAura = oneIn(1000);
         const hasHead = oneIn(200);
-        const hasMaskType = oneIn(1);
         const hasGlasses = oneIn(2);
         const hasSingleColor= oneIn(5);
 
         const eyesIndex = randomInt(0, 4);
         const headIndex = randomInt(0, 3);
         const glassesIndex = randomInt(0, 7);
-        let maskIndex = randomInt(0, 10);
 
         const common = {
             heart: await loadImage(path.join(__dirname, './res/common/heart.svg')),
@@ -233,11 +231,10 @@ const generateArt = async (name, gender = 'female', type = 1) => {
             }
         }
 
-        ctx.drawImage(image, 0, 0);
+        const maskIndex = randomInt(0, hero[gender].modifiers.masks.length - 1);
 
-        if (hasMaskModifier) {
-            maskIndex = randomInt(0, hero[gender].modifiers.masks.length - 1)
-        }
+
+        ctx.drawImage(image, 0, 0);
 
         if (gender === 'male') {
             const isNaked = oneIn(100);
@@ -266,7 +263,7 @@ const generateArt = async (name, gender = 'female', type = 1) => {
             isNeck && ctx.drawImage(hero.male.neck, 0, 0, 2048, 2048);
             hasHeart && ctx.drawImage(common.heart, 0, 0, 2048, 2048);
             if (isBald) ctx.drawImage(await loadImage(hero.male.bald), 0, 0, 2048, 2048);
-            else hasMaskType && ctx.drawImage(common.masks[maskIndex], 0, 0, 2048, 2048);
+            hasMaskModifier && ctx.drawImage(common.masks[maskIndex], 0, 0, 2048, 2048);
             hasHair && ctx.drawImage(hero.male.hair[hairIndex], 0, 0, 2048, 2048);
         }
 
@@ -293,7 +290,7 @@ const generateArt = async (name, gender = 'female', type = 1) => {
 
             ctx.drawImage(await loadImage(hero.female.mask), 0, 0, 2048, 2048);
             ctx.drawImage(hero.female.modifiers.body, 0, 0, 2048, 2048);
-            hasMaskType && ctx.drawImage(hero.female.modifiers.masks[maskIndex], 0, 0, 2048, 2048);
+            hasMaskModifier && ctx.drawImage(hero.female.modifiers.masks[maskIndex], 0, 0, 2048, 2048);
 
             const hair = await randomizeElementColor(hero.female.hair[hairIndex], type)
             buffer = await sharp(Buffer.from(hair)).toBuffer();
