@@ -1,0 +1,11 @@
+<svg width="2048" height="2048" viewBox="0 0 2048 2048" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="64" height="64" transform="matrix(-1 0 0 1 896 832)" fill="#4CEDFF"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 960 768)" fill="black"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 832 768)" fill="black"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 960 832)" fill="black"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 832 832)" fill="black"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 896 768)" fill="black"/>
+<rect width="64" height="384" transform="matrix(-1 0 0 1 832 896)" fill="black"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 960 896)" fill="black"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 896 896)" fill="black"/>
+</svg>

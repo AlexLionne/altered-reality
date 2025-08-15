@@ -7,6 +7,9 @@ import sharp from "sharp";
 import {randomInt} from "crypto";
 import OpenAI from "openai";
 import {randomizeElementColor} from "./color-mapper.js";
+import {JSDOM} from "jsdom";
+import {select} from "d3-selection";
+import * as tx from "textures"; // certaines configs: `import textures from "textures"`
 
 const client = new OpenAI({
     apiKey: "",
@@ -23,6 +26,7 @@ function oneIn(x) {
 }
 
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 (async () => {
     const browser = await puppeteer.launch({
         headless: true,
@@ -33,9 +37,8 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     // { headless: false } si tu veux voir le navigateur
     const page = await browser.newPage();
 
-    const query = `?type=2`
 
-    const generateAsset = async (batch) => {
+    const generateAsset = async (batch ,type) => {
         await page.evaluate(() => {
             const input = document.querySelector('#export-button');
             input && input.click()
@@ -88,74 +91,94 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
         // Sauvegarder dans un fichier
         fs.writeFileSync(path.join(__dirname, `./uploads/${batch}.png`), base64Data, 'base64');
-        await generateArt(batch)
+        await generateArt(batch, null, type)
     }
 
-    for (let i = 0; i < 300; i++) {
+    for (let i = 0; i < 1000; i++) {
+        const type =  oneIn(2) ? 1 : 2;
+        const query = `?type=${type}`
+
         await page.goto(`http://localhost:5175/${query}`, {waitUntil: 'networkidle0'})
         await wait(3000)
-        await generateAsset(i)
+        await generateAsset(i, type)
     }
     await browser.close();
 })();
 
 
-const generateArt = async (name, gender = 'female', type = 1) => {
+const generateArt = async (name, gender, type) => {
     try {
-        gender = oneIn(3) ? 'female' : 'male';
+        gender = oneIn(2) ? 'female' : 'male';
+        const side = type === 1 ? 'villain' : 'hero';
 
+        console.log(`Generating ${name}...`);
+        console.log(`Gender: ${gender}`);
+        console.log(`Type: ${type}`);
         const canvas = createCanvas(2048, 2048);
         const ctx = canvas.getContext('2d');
         const imagePath = path.join(__dirname, `./uploads/${name}.png`);
         const image = await loadImage(imagePath);
 
-        const hasMaskModifier = oneIn(5);
-
+        const hasMaskModifier = oneIn(2);
+        const isPrototype = false //oneIn(10);
         const isNeck = oneIn(10);
         const hasHeart = oneIn(50);
         const hasAura = oneIn(1000);
-        const hasHead = oneIn(200);
+        const hasHead = oneIn(10);
         const hasGlasses = oneIn(2);
-        const hasSingleColor= oneIn(5);
+        const hasAccessories = oneIn(20);
+        const hasSingleColor = oneIn(5);
+        const hasHair = gender === 'female' || oneIn(7);
 
-        const eyesIndex = randomInt(0, 4);
-        const headIndex = randomInt(0, 3);
-        const glassesIndex = randomInt(0, 7);
+        const eyesIndex = randomInt(0, 5);
+        const headIndex = randomInt(0, 4);
+        const glassesIndex = randomInt(0, 13);
 
         const common = {
+            accessories: [
+                await loadImage(path.join(__dirname, './res/common/accessories/acc_1.svg')),
+                await loadImage(path.join(__dirname, './res/common/accessories/acc_2.svg')),
+                await loadImage(path.join(__dirname, './res/common/accessories/acc_3.svg')),
+                await loadImage(path.join(__dirname, './res/common/accessories/acc_4.svg')),
+            ],
             heart: await loadImage(path.join(__dirname, './res/common/heart.svg')),
             masks: [
-                await loadImage(path.join(__dirname, './res/common/mask/modifiers/mask_1.svg')),
-                await loadImage(path.join(__dirname, './res/common/mask/modifiers/mask_2.svg')),
-                await loadImage(path.join(__dirname, './res/common/mask/modifiers/mask_3.svg')),
-                await loadImage(path.join(__dirname, './res/common/mask/modifiers/mask_4.svg')),
-                await loadImage(path.join(__dirname, './res/common/mask/modifiers/mask_5.svg')),
-                await loadImage(path.join(__dirname, './res/common/mask/modifiers/mask_6.svg')),
-                await loadImage(path.join(__dirname, './res/common/mask/modifiers/mask_7.svg')),
-                await loadImage(path.join(__dirname, './res/common/mask/modifiers/mask_8.svg')),
-                await loadImage(path.join(__dirname, './res/common/mask/modifiers/mask_9.svg')),
-                await loadImage(path.join(__dirname, './res/common/mask/modifiers/mask_12.svg')),
-                // await loadImage(path.join(__dirname, './res/common/mask/mask_10.svg')),
-                // await loadImage(path.join(__dirname, './res/common/mask/mask_11.svg')),
-                await loadImage(path.join(__dirname, './res/common/mask/mask_13.svg'))
+                await loadImage(path.join(__dirname, `./res/common/mask/modifiers/${side}/mask_1.svg`)),
+                await loadImage(path.join(__dirname, `./res/common/mask/modifiers/${side}/mask_2.svg`)),
+                await loadImage(path.join(__dirname, `./res/common/mask/modifiers/${side}/mask_3.svg`)),
+                await loadImage(path.join(__dirname, `./res/common/mask/modifiers/${side}/mask_4.svg`)),
+                await loadImage(path.join(__dirname, `./res/common/mask/modifiers/${side}/mask_5.svg`)),
+                await loadImage(path.join(__dirname, `./res/common/mask/modifiers/${side}/mask_6.svg`)),
+                await loadImage(path.join(__dirname, `./res/common/mask/modifiers/${side}/mask_7.svg`)),
+                await loadImage(path.join(__dirname, `./res/common/mask/modifiers/${side}/mask_8.svg`)),
+                await loadImage(path.join(__dirname, `./res/common/mask/modifiers/${side}/mask_9.svg`)),
+                await loadImage(path.join(__dirname, `./res/common/mask/modifiers/${side}/mask_12.svg`)),
+                await loadImage(path.join(__dirname, `./res/common/mask/mask_10.svg`)),
+                await loadImage(path.join(__dirname, `./res/common/mask/mask_11.svg`))
             ],
             glasses: [
-                await loadImage(path.join(__dirname, './res/common/glasses/glasses_1.svg')),
-                await loadImage(path.join(__dirname, './res/common/glasses/glasses_2.svg')),
-                await loadImage(path.join(__dirname, './res/common/glasses/glasses_3.svg')),
-                await loadImage(path.join(__dirname, './res/common/glasses/glasses_4.svg')),
-                await loadImage(path.join(__dirname, './res/common/glasses/glasses_5.svg')),
-                await loadImage(path.join(__dirname, './res/common/glasses/glasses_6.svg')),
+                await loadImage(path.join(__dirname, `./res/common/glasses/${side}/glasses_1.svg`)),
+                await loadImage(path.join(__dirname, `./res/common/glasses/${side}/glasses_2.svg`)),
+                await loadImage(path.join(__dirname, `./res/common/glasses/${side}/glasses_3.svg`)),
+                await loadImage(path.join(__dirname, `./res/common/glasses/${side}/glasses_4.svg`)),
+                await loadImage(path.join(__dirname, `./res/common/glasses/${side}/glasses_5.svg`)),
+                await loadImage(path.join(__dirname, `./res/common/glasses/${side}/glasses_6.svg`)),
                 //await loadImage(path.join(__dirname, './res/common/glasses/glasses_7.svg')),
                 //await loadImage(path.join(__dirname, './res/common/glasses/glasses_8.svg')),
-                await loadImage(path.join(__dirname, './res/common/glasses/glasses_9.svg')),
-                await loadImage(path.join(__dirname, './res/common/glasses/glasses_10.svg'))
+                await loadImage(path.join(__dirname, `./res/common/glasses/${side}/glasses_9.svg`)),
+                await loadImage(path.join(__dirname, `./res/common/glasses/${side}/glasses_10.svg`)),
+                await loadImage(path.join(__dirname, `./res/common/glasses/${side}/glasses_11.svg`)),
+                await loadImage(path.join(__dirname, `./res/common/glasses/${side}/glasses_12.svg`)),
+                await loadImage(path.join(__dirname, `./res/common/glasses/${side}/glasses_13.svg`)),
+                await loadImage(path.join(__dirname, `./res/common/glasses/${side}/glasses_14.svg`)),
+                await loadImage(path.join(__dirname, `./res/common/glasses/${side}/glasses_15.svg`)),
+                await loadImage(path.join(__dirname, `./res/common/glasses/${side}/glasses_16.svg`)),
             ],
             heads: [
-                await loadImage(path.join(__dirname, './res/common/head/head_2.svg')),
-                await loadImage(path.join(__dirname, './res/common/head/head_3.svg')),
-                await loadImage(path.join(__dirname, './res/common/head/head_4.svg')),
-                await loadImage(path.join(__dirname, './res/common/head/head_5.svg')),
+                path.join(__dirname, './res/common/head/head_2.svg'),
+                path.join(__dirname, './res/common/head/head_3.svg'),
+                path.join(__dirname, './res/common/head/head_4.svg'),
+                path.join(__dirname, './res/common/head/head_5.svg'),
             ],
             eyes: [
                 path.join(__dirname, './res/common/eyes/eyes_1.svg'),
@@ -163,12 +186,7 @@ const generateArt = async (name, gender = 'female', type = 1) => {
                 path.join(__dirname, './res/common/eyes/eyes_3.svg'),
                 path.join(__dirname, './res/common/eyes/eyes_4.svg'),
                 path.join(__dirname, './res/common/eyes/eyes_5.svg'),
-                path.join(__dirname, './res/common/eyes/eyes_6.svg'),
-                path.join(__dirname, './res/common/eyes/eyes_7.svg'),
-                path.join(__dirname, './res/common/eyes/eyes_8.svg'),
-                path.join(__dirname, './res/common/eyes/eyes_9.svg'),
-                path.join(__dirname, './res/common/eyes/eyes_10.svg'),
-                path.join(__dirname, './res/common/eyes/eyes_11.svg')
+                path.join(__dirname, './res/common/eyes/eyes_6.svg')
             ],
             modifiers: {
                 colors: {
@@ -184,35 +202,36 @@ const generateArt = async (name, gender = 'female', type = 1) => {
 
         const hero = {
             male: {
-                mask: path.join(__dirname, './res/heroes/male/mask/mask.svg'),
-                bald: path.join(__dirname, './res/heroes/male/head/bald.svg'),
-                aura: await loadImage(path.join(__dirname, './res/heroes/male/aura/aura.svg')),
-                naked: path.join(__dirname, './res/heroes/male/body/naked.svg'),
-                neck: await loadImage(path.join(__dirname, './res/heroes/male/body/neck.svg')),
+                mask: path.join(__dirname, './res/male/mask/mask.svg'),
+                bald: path.join(__dirname, './res/male/head/bald.svg'),
+                aura: await loadImage(path.join(__dirname, './res/male/aura/aura.svg')),
+                naked: path.join(__dirname, `./res/male/body/${side}/naked.svg`),
+                neck: await loadImage(path.join(__dirname, `./res/male/body/${side}/neck.svg`)),
                 hair: [
-                    await loadImage(path.join(__dirname, './res/heroes/male/hair/hair_1.svg')),
-                    await loadImage(path.join(__dirname, './res/heroes/male/hair/hair_2.svg')),
-                    await loadImage(path.join(__dirname, './res/heroes/male/hair/hair_3.svg')),
-                    await loadImage(path.join(__dirname, './res/heroes/male/hair/hair_4.svg')),
-                    await loadImage(path.join(__dirname, './res/heroes/male/hair/hair_5.svg'))
+                    path.join(__dirname, './res/male/hair/hair_1.svg'),
+                    path.join(__dirname, './res/male/hair/hair_2.svg'),
+                    path.join(__dirname, './res/male/hair/hair_3.svg'),
+                    path.join(__dirname, './res/male/hair/hair_4.svg'),
+                    path.join(__dirname, './res/male/hair/hair_5.svg'),
                 ],
                 modifiers: {
                     masks: [
                         ...common.masks,
                     ],
                     head: [
-                        await loadImage(path.join(__dirname, './res/heroes/male/modifiers/head_1.svg')),
-                        await loadImage(path.join(__dirname, './res/heroes/male/modifiers/head_6.svg')),
-                        await loadImage(path.join(__dirname, './res/heroes/male/modifiers/head_7.svg')),
+                        await loadImage(path.join(__dirname, './res/male/modifiers/head_1.svg')),
+                        await loadImage(path.join(__dirname, './res/male/modifiers/head_6.svg')),
+                        await loadImage(path.join(__dirname, './res/male/modifiers/head_7.svg')),
                     ],
                 }
             },
             female: {
-                mask: path.join(__dirname, './res/heroes/female/mask/mask.svg'),
+                mask: path.join(__dirname, './res/female/mask/mask.svg'),
                 aura: null,
+                neck: await loadImage(path.join(__dirname, `./res/female/body/${side}/neck.svg`)),
                 naked: null,
                 hair: [
-                    path.join(__dirname, './res/heroes/female/hair/hair.svg')
+                    path.join(__dirname, './res/female/hair/hair.svg')
                 ],
                 modifiers: {
                     colors: {
@@ -225,89 +244,125 @@ const generateArt = async (name, gender = 'female', type = 1) => {
                         common.masks[3],
                         common.masks[7],
                     ],
-                    background: await loadImage(path.join(__dirname, './res/heroes/female/modifiers/background.svg')),
-                    body: await loadImage(path.join(__dirname, './res/heroes/female/modifiers/body.svg')),
+                    background: await loadImage(path.join(__dirname, './res/female/modifiers/background.svg')),
+                    body: await loadImage(path.join(__dirname, './res/female/modifiers/body.svg')),
                 }
             }
         }
 
         const maskIndex = randomInt(0, hero[gender].modifiers.masks.length - 1);
 
-
         ctx.drawImage(image, 0, 0);
+
+        let svg
+        if (isPrototype) {
+            let background = fs.readFileSync(path.join(__dirname, `./res/${gender}/modifiers/background_2.svg`), "utf8");
+            /*let buffer = applyTextureToSvgBuffer(Buffer.from(background), {
+                selector: "rect",
+                buildTexture: (t) => t.lines()
+                    .orientation("3/8", "7/8")
+                    .stroke("darkorange")
+            });
+            //buffer = buffer.toString('utf-8').replace('<html><head></head><body>', '').replace('</body></html>', '');*/
+            let buffer = await sharp(Buffer.from(background)).toBuffer();
+            svg = await loadImage(buffer)
+        } else {
+            let r, g, b
+            const colors = await getFirstPixelColor(imagePath);
+            if (type === 1) {
+                r = darkenRGB(colors, 0.1).r
+                g = darkenRGB(colors, 0.1).g
+                b = darkenRGB(colors, 0.1).b
+            } else {
+                r = colors.r
+                g = colors.g
+                b = colors.b
+            }
+            let background = fs.readFileSync(path.join(__dirname, `./res/${gender}/modifiers/background.svg`), "utf8");
+            background = background.replace(/#000000/gi, `rgb(${r},${g},${b})`);
+            let buffer = await sharp(Buffer.from(background)).toBuffer();
+            svg = await loadImage(buffer);
+        }
+
+        if (hasSingleColor) {
+            const head = await randomizeElementColor(hero.male.bald, type)
+            const buffer = await sharp(Buffer.from(head)).toBuffer();
+            ctx.drawImage(await loadImage(buffer), 0, 0, 2048, 2048);
+        }
+
+        if (hasSingleColor) {
+            const body = await randomizeElementColor(hero.male.naked, type)
+            const buffer = await sharp(Buffer.from(body)).toBuffer();
+            ctx.drawImage(await loadImage(buffer), 0, 0, 2048, 2048);
+        }
+
+        ctx.drawImage(svg, 0, 0, 2048, 2048);
 
         if (gender === 'male') {
             const isNaked = oneIn(100);
             const isBald = oneIn(10);
-            const hasHair = oneIn(7);
             const hairIndex = randomInt(0, 4);
 
             ctx.drawImage(await loadImage(hero.male.mask), 192, 192, 1664, 1856);
 
-            if (hasSingleColor) {
-                const head = await randomizeElementColor(hero.male.bald, type)
-                const buffer = await sharp(Buffer.from(head)).toBuffer();
-                ctx.drawImage(await loadImage(buffer), 0, 0, 2048, 2048);
-            }
-
-            if (hasSingleColor) {
-                const body = await randomizeElementColor(hero.male.naked, type)
-                const buffer = await sharp(Buffer.from(body)).toBuffer();
-                ctx.drawImage(await loadImage(buffer), 0, 0, 2048, 2048);
-            }
-
-            ctx.drawImage(await loadImage(common.eyes[eyesIndex]), 0, 0, 2048, 2048);
             hasAura && ctx.drawImage(hero.male.aura, 0, 0, 2048, 2048);
-            hasHead && ctx.drawImage(common.heads[headIndex], 0, 0, 2048, 2048);
             isNaked && ctx.drawImage(await loadImage(hero.male.naked), 0, 0, 2048, 2048);
-            isNeck && ctx.drawImage(hero.male.neck, 0, 0, 2048, 2048);
+
             hasHeart && ctx.drawImage(common.heart, 0, 0, 2048, 2048);
-            if (isBald) ctx.drawImage(await loadImage(hero.male.bald), 0, 0, 2048, 2048);
-            hasMaskModifier && ctx.drawImage(common.masks[maskIndex], 0, 0, 2048, 2048);
-            hasHair && ctx.drawImage(hero.male.hair[hairIndex], 0, 0, 2048, 2048);
+            if (isBald) {
+                const face = await randomizeElementColor(hero.male.bald, type)
+                const buffer = await sharp(Buffer.from(face)).toBuffer();
+                ctx.drawImage(await loadImage(buffer), 0, 0, 2048, 2048);
+            }
+
+            !isBald && hasMaskModifier && ctx.drawImage(common.masks[maskIndex], 0, 0, 2048, 2048);
+
+            if (hasHair && headIndex !== 4) {
+                const hair = await randomizeElementColor(hero.male.hair[hairIndex], type)
+                const buffer = await sharp(Buffer.from(hair)).toBuffer();
+                ctx.drawImage(await loadImage(buffer), 0, 0, 2048, 2048);
+            }
         }
 
         if (gender === 'female') {
             const hairIndex = 0;
-            const {r, g, b} = await getFirstPixelColor(imagePath)
 
-            if (hasSingleColor) {
-                const head = await randomizeElementColor(hero.male.bald, type)
-                const buffer = await sharp(Buffer.from(head)).toBuffer();
-                ctx.drawImage(await loadImage(buffer), 0, 0, 2048, 2048);
+            if (isNeck) {
+                ctx.drawImage(hero.female.neck, 0, 0, 2048, 2048);
             }
-
-            if (hasSingleColor) {
-                const body = await randomizeElementColor(hero.male.naked, type)
-                const buffer = await sharp(Buffer.from(body)).toBuffer();
-                ctx.drawImage(await loadImage(buffer), 0, 0, 2048, 2048);
-            }
-
-            let background = fs.readFileSync(path.join(__dirname, './res/heroes/female/modifiers/background.svg'), "utf8");
-            background = background.replace(/#000000/gi, `rgb(${r},${g},${b})`);
-            let buffer = await sharp(Buffer.from(background)).toBuffer();
-            const svg = await loadImage(buffer);
 
             ctx.drawImage(await loadImage(hero.female.mask), 0, 0, 2048, 2048);
             ctx.drawImage(hero.female.modifiers.body, 0, 0, 2048, 2048);
             hasMaskModifier && ctx.drawImage(hero.female.modifiers.masks[maskIndex], 0, 0, 2048, 2048);
 
             const hair = await randomizeElementColor(hero.female.hair[hairIndex], type)
-            buffer = await sharp(Buffer.from(hair)).toBuffer();
+            const buffer = await sharp(Buffer.from(hair)).toBuffer();
             ctx.drawImage(await loadImage(buffer), 0, 0, 2048, 2048);
-            ctx.drawImage(svg, 0, 0, 2048, 2048);
         }
 
-        ctx.drawImage(await loadImage(common.eyes[eyesIndex]), 0, 0, 2048, 2048);
+        let eyes = fs.readFileSync(common.eyes[eyesIndex], "utf8");
+        eyes = eyes.replace(/#ffffff/gi, type === 1 ? oneIn(100) ? 'lightgreen' : 'red': 'white');
+        let buffer = await sharp(Buffer.from(eyes)).toBuffer();
+        svg = await loadImage(buffer);
 
-        if (hasGlasses) {
-            if (glassesIndex === 4 || glassesIndex === 3) {
-                const hasBoth = oneIn(2);
-                if (hasBoth) {
-                    ctx.drawImage(common.glasses[3], 0, 0, 2048, 2048);
-                    ctx.drawImage(common.glasses[4], 0, 0, 2048, 2048);
-                }
-            }
+        if (type === 1) {
+            ctx.drawImage(svg, 0, 0, 2048, 2048);
+        } else {
+            ctx.drawImage(await loadImage(common.eyes[eyesIndex]), 0, 0, 2048, 2048);
+        }
+
+        if (hasHead && !hasHair) {
+            const head = await randomizeElementColor(common.heads[headIndex], type)
+            const buffer = await sharp(Buffer.from(head)).toBuffer();
+            ctx.drawImage(await loadImage(buffer), 0, 0, 2048, 2048);
+        }
+
+        if (hasAccessories) {
+            const accessoriesIndex = randomInt(0, 3);
+            ctx.drawImage(common.accessories[accessoriesIndex], 0, 0, 2048, 2048);
+        }
+
+        if (hasGlasses && eyesIndex != 5) {
             ctx.drawImage(common.glasses[glassesIndex], 0, 0, 2048, 2048);
         }
 
@@ -493,4 +548,46 @@ async function getFirstPixelColor(filePath) {
     const a = 255; // Alpha par défaut à 255
 
     return {r, g, b, a};
+}
+
+/**
+ * Applique un pattern textures.js à des éléments d'un SVG (en mémoire).
+ * @param {Buffer} svgBuffer - SVG original
+ * @param {Object} options
+ * @param {string} options.selector - sélecteur des éléments à remplir (ex: 'path', '.classe', '#id')
+ * @param {(textures:any)=>any} options.buildTexture - fabrique le pattern (reçoit le module textures)
+ * @returns {Buffer} - SVG modifié (toujours en mémoire)
+ */
+export function applyTextureToSvgBuffer(svgBuffer, {
+    selector = "path",
+    buildTexture = (textures) => textures.circles().size(4).stroke("#333").fill("none")
+} = {}) {
+    // 1) Parser le SVG dans un DOM virtuel
+    const svgString = svgBuffer.toString("utf8");
+    const dom = new JSDOM(svgString);
+    const document = dom.window.document;
+
+    // 2) Récupérer la racine <svg> et créer une sélection d3
+    const svgEl = document.querySelector("svg");
+    if (!svgEl) throw new Error("Aucun <svg> trouvé dans le buffer.");
+    const d3svg = select(svgEl);
+
+    // 3) Construire le pattern textures.js et l’injecter dans <defs>
+    const texture = buildTexture(tx.default ?? tx); // compat default/named export
+    d3svg.call(texture); // crée <defs> + <pattern> automatiquement
+
+    // 4) Appliquer le fill via URL du pattern aux éléments ciblés
+    d3svg.selectAll(selector).attr("fill", texture.url());
+
+    // 5) Sérialiser et renvoyer en Buffer
+    const out = dom.serialize();
+    return Buffer.from(out, "utf8");
+}
+
+function darkenRGB({r, g, b}, factor = 0.8) {
+    return {
+        r: Math.max(0, Math.round(r * factor)),
+        g: Math.max(0, Math.round(g * factor)),
+        b: Math.max(0, Math.round(b * factor)),
+    };
 }

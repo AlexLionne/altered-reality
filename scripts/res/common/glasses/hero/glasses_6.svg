@@ -1,0 +1,25 @@
+<svg width="2048" height="2048" viewBox="0 0 2048 2048" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1344 768)" fill="#0000FF"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1280 832)" fill="#0000FF"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1216 768)" fill="#0000FF"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1344 832)" fill="black"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1216 832)" fill="black"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1280 768)" fill="#4CEDFF"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1408 768)" fill="black"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1344 704)" fill="black"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1408 832)" fill="black"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1344 896)" fill="black"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1280 704)" fill="black"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1216 704)" fill="black"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1152 640)" fill="black"/>
+<rect width="448" height="64" transform="matrix(-1 0 0 1 1088 640)" fill="black"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 832 640)" fill="black"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 768 640)" fill="black"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1472 640)" fill="black"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1408 640)" fill="black"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1152 768)" fill="black"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1280 896)" fill="black"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1216 896)" fill="black"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1152 832)" fill="black"/>
+<rect width="64" height="64" transform="matrix(-1 0 0 1 1152 832)" fill="black"/>
+</svg>

@@ -16,6 +16,7 @@ extend({
     BodyWarpMaterialModel,
     NightSkyMaterial
 })
+
 function lightenHexColor(hex, amount = 0.2) {
     // Retire le #
     hex = hex.replace(/^#/, '');
@@ -38,6 +39,7 @@ function lightenHexColor(hex, amount = 0.2) {
 
     return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
 }
+
 const getRandomColor = () => {
     const h = Math.floor(Math.random() * 360);
     const s = 100;
@@ -56,6 +58,7 @@ function hslToRgbWithIntensity(h, s, l, intensity = 1) {
 
     return hslToRgb(h, s, l)
 }
+
 function hslToRgb(h, s, l) {
     let r, g, b
     if (s === 0) {
@@ -79,9 +82,62 @@ function hslToRgb(h, s, l) {
     return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)]
 }
 
+/**
+ * Décode un seed de 36 caractères hex :
+ * [type:2] [durée:4] [couleur1:6]...[couleur5:6]
+ */
+function parseSeed(seed) {
+    if (typeof seed !== "string") throw new Error("Seed doit être une chaîne.");
+    const hex = seed.replace(/^0x/i, "").toUpperCase();
+
+    if (!/^[0-9A-F]+$/.test(hex)) {
+        throw new Error("Seed contient des caractères non-hexadécimaux.");
+    }
+    if (hex.length !== 36) {
+        throw new Error(`Longueur invalide: attendu 36, reçu ${hex.length}.`);
+    }
+
+    // Slicing
+    const typeHex = hex.slice(0, 2);
+    const durationHex = hex.slice(2, 6);
+    const colorsHex = hex.slice(6); // 30 car = 5 * 6
+
+    const type = parseInt(typeHex, 16);
+    const duration = parseInt(durationHex, 16);
+
+    // Optionnel: valider les bornes prévues
+    if (type < 1 || type > 2) {
+        throw new Error(`Type hors bornes (1..2): ${type}`);
+    }
+    if (duration < 0 || duration > 10000) {
+        throw new Error(`Durée hors bornes (0..10000): ${duration}`);
+    }
+
+    // Découpe des 5 couleurs (6 car chacune)
+    const colors = [];
+    for (let i = 0; i < 5; i++) {
+        const start = i * 6;
+        const hexColor = colorsHex.slice(start, start + 6);
+        colors.push("#" + hexColor);
+    }
+
+    return {type, duration, colors};
+}
+
 export default function App() {
     const params = new URLSearchParams(window.location.search);
+    const ts = null
+    const seed = null
     // ——— États liquides & couleurs ———
+   // const seed = parseSeed(new URLSearchParams(window.location.search).get('seed'))
+    //let {type, duration: ts, colors} = seed
+
+    const type = parseInt(params.get('type'))
+    /*if (type === 2) {
+        colors = colors.map((c, id) => ({id, value: c, intensity: 2}))
+    } else {
+        colors = colors.map((c, id) => ({id, value: c, intensity: 1}))
+    }*/
 
     const [liquid, setLiquid] = useState({
         colors: settings,
@@ -131,8 +187,7 @@ export default function App() {
     }
 
     useEffect(() => {
-        if (params.get('type')) {
-            const type = parseInt(params.get('type'))
+        if (type) {
             if (type === 1) {
                 randomizeColors(0.5)
             } else {
@@ -140,7 +195,7 @@ export default function App() {
             }
         }
     }, []);
-    // ——— États shader ———
+// ——— États shader ———
     const [dx, setDx] = useState(1)
     const [dy, setDy] = useState(1)
     const [deformAmplitude, setDeformAmplitude] = useState(0)  // Nouvel état pour l'amplitude
@@ -155,12 +210,12 @@ export default function App() {
     const matRef = useRef()
     const matRef2 = useRef()
     const timeOffset = useRef(300)
-    // export
+// export
     const isExportingVideo = useRef(false)
-    const exportBaseTime = useRef(Math.random() * 10000)
+    const exportBaseTime = useRef(ts || Math.random() * 10000)
     const exportFrame = useRef(0)
 
-    // ——— Hook GUI ———
+// ——— Hook GUI ———
     useGUI(gui => {
         // Shader controls
         gui.add({dx}, 'dx', 0, 1, 0.01).name('Dépl X').onChange(setDx)
@@ -176,7 +231,7 @@ export default function App() {
             .onChange(setBrightness)
         gui.add({pixelSize}, 'pixelSize', 0, 8, 1).name('Pixel Size').onChange(setPixelSize)
         gui.add({randomizeColors}, 'randomizeColors').name('Random')
-        const controller = gui.add({ exportSceneAsJPG }, 'exportSceneAsJPG').name('Exporter');
+        const controller = gui.add({exportSceneAsJPG}, 'exportSceneAsJPG').name('Exporter');
         controller.domElement.querySelector('button').id = 'export-button';
         gui.add({runExport}, 'runExport').name('Exporter 100')
         gui.add({startExportVideo}, 'startExportVideo').name('Video Exporter')
@@ -205,7 +260,7 @@ export default function App() {
         })
     })
 
-    function Scene() {
+    function Scene({seed}) {
         const {camera} = useThree()
         const meshRef = useRef()
         const mesh2Ref = useRef()
@@ -219,9 +274,9 @@ export default function App() {
             if (matRef2.current && matRef.current) {
 
                 let ratio = 2
-                const type = parseInt(params.get('type'))
+                const type = parseInt(seed?.type)
                 if (type === 1) ratio = 0.2
-                glRef.current && glRef.current.setClearColor(lightenHexColor(liquid.colors[1].value, 0.5 ),ratio)
+                glRef.current && glRef.current.setClearColor(lightenHexColor(liquid.colors[1].value, 0.5), ratio)
 
                 const outfit = matRef2.current.uniforms
                 const v = matRef.current.uniforms
@@ -231,7 +286,6 @@ export default function App() {
 
                 outfit.uPixelSize.value = pixelSize
                 v.uPixelSize.value = pixelSize
-
 
 
                 outfit.uBrightness.value = 0
@@ -273,7 +327,6 @@ export default function App() {
                 v.uLevel.value = liquid.level
                 v.uSeed.value = liquid.seed
                 v.uYBias.value = liquid.yBias
-
 
 
                 //bg.uPixelSize.value = pixelSize
@@ -334,7 +387,7 @@ export default function App() {
     const glRef = useRef()
     const sceneRef = useRef()
     const cameraRef = useRef()
-    const imageCount = useRef(0)
+    const imageCount = useRef(210)
     const randomizeColors = (intensity = 2) => {
         setLiquid(l => ({
             ...l,
@@ -383,13 +436,13 @@ export default function App() {
         const renderTarget = new THREE.WebGLRenderTarget(width, height)
         renderTarget.texture.encoding = gl.outputEncoding
 
-        exportBaseTime.current = Math.random() * 100
+
         exportFrame.current = 0
         isExportingVideo.current = true
 
         for (let frame = 0; frame < totalFrames; frame++) {
             exportFrame.current = frame
-
+            exportBaseTime.current = exportBaseTime.current + 1
             console.log('exporting frame', frame)
             // Attend le rendu complet de la frame
             await new Promise(resolve => requestAnimationFrame(resolve))
@@ -547,7 +600,7 @@ export default function App() {
                 <directionalLight castShadow intensity={20} color={'blue'} position={[0, 10, -1]}/>
                 <directionalLight castShadow intensity={20} color={'white'} position={[0, 1, -1]}/>
                 <OrbitControls/>
-                <Scene/>
+                <Scene seed={seed}/>
             </Canvas>
         </div>
     )
