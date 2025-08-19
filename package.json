@@ -4,12 +4,13 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "agent": "node scripts/agent.js",
+    "agent": "node scripts/turtles/agent.js",
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "deploy": "zx scripts/deploy.mjs"
+    "deploy": "zx scripts/heroes/deploy.mjs",
+    "install": "npm install"
   },
   "dependencies": {
     "@react-three/drei": "^10.5.1",
