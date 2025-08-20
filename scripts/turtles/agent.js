@@ -35,8 +35,9 @@ const getCarapaceModifiers = async (carapaceColor) => {
 
 const getBodyModifiers = async (bodyStyle, bodyColor, backgroundColor) => {
     const palette = await getPalette()
-    if (bodyColor === backgroundColor) return await getBodyModifiers(bodyColor, adjustLightness(palette[randomInt(0, colorsNumber)], 90))
+    if (bodyColor === backgroundColor) return await getBodyModifiers(bodyStyle, bodyColor, adjustLightness(palette[randomInt(0, colorsNumber)], 90))
 
+    console.log(bodyStyle, bodyColor, backgroundColor)
     switch (bodyStyle) {
         case 0:
             return [
@@ -64,24 +65,39 @@ const getBodyModifiers = async (bodyStyle, bodyColor, backgroundColor) => {
             ]
     }
 }
+const getSurfModifiers = async (backgroundColor) => {
+    return [
+        ['pink', adjustLightness(backgroundColor, 60)],
+        ['red', adjustLightness(backgroundColor, 50)],
+        ['blue', adjustLightness(backgroundColor, 70)],
+        ['green', adjustLightness(backgroundColor, 80)],
+        ['yellow', adjustLightness(backgroundColor, 90)],
+    ]
+}
 
-const getEyesModifiers = async (color) => {
+const getEyesModifiers = async (color, headModifiers) => {
     const hasCustomEyes = oneIn(3)
+    const hasBlack = headModifiers[1][1] === '#000000' || headModifiers[0][1] === '#000000' || headModifiers[2][1] === '#000000'
+    const hasWhite = headModifiers[1][1] === '#ffffff' || headModifiers[0][1] === '#ffffff' || headModifiers[2][1] === '#ffffff'
+    if (hasBlack) color = '#ffffff'
+    if (hasWhite) color = '#000000'
 
+    console.log(headModifiers, hasCustomEyes, headModifiers[1][1], color)
     if (hasCustomEyes) {
         return [['black', color]]
     }
 
-    return [['black', 'black']]
+    return [['black', hasBlack ? 'white' : 'black']]
 }
 
-const getHeadModifiers = async (base, eyesColor) => {
+const getHeadModifiers = async (base) => {
     const palette = await getPalette()
     const hasHeaded = oneIn(10)
     const hasMask = oneIn(20)
     const hasHeadGradient = oneIn(10)
     const color = randomInt(0, colorsNumber)
 
+    if (base === '#ffffff') return await getHeadModifiers(palette[color])
     if (hasHeadGradient) {
         return [
             ['red', adjustLightness(base, 80)],
@@ -146,16 +162,20 @@ const getBackgroundColorIndex = (baseIndex) => {
     const colors = await getPalette()
     for (const a in [...Array(1000).keys()]) {
 
+        const isDualTones = oneIn(20)
         const baseColorIndex = randomInt(3, colorsNumber)
         const baseBackgroundIndex = getBackgroundColorIndex(baseColorIndex)
+        const dualToneColorIndex = getBackgroundColorIndex(baseBackgroundIndex)
+
         const carapaceColor = colors[baseBackgroundIndex]
-        const eyesColor = oneIn(10) ? 'white' : adjustLightness(colors[randomInt(3, colorsNumber)], 20)
+        const headModifiers = await getHeadModifiers(colors[baseColorIndex])
+        const eyesColor = oneIn(10) || headModifiers[0][1] === '#000000' ? 'white' : adjustLightness(colors[baseBackgroundIndex], 10)
 
         const bodyStyle = randomInt(0, 3)
         const bodyColor = adjustLightness(colors[baseColorIndex], 90)
         const baseColor = adjustLightness(colors[baseColorIndex], 70)
         const backgroundColor = adjustLightness(carapaceColor, 95)
-
+        const dualToneColor = colors[dualToneColorIndex]
         // mandatory parts
         const hasCrown = oneIn(5)
         const hasEgg = oneIn(15000)
@@ -163,6 +183,12 @@ const getBackgroundColorIndex = (baseIndex) => {
         const isCrying = oneIn(1000)
         const hasLazr = oneIn(100)
         const mouthStyle = randomInt(0, 3)
+        const hasGlasses = oneIn(30)
+        const hasGlassesGradient = oneIn(2)
+        const hasWater = oneIn(10)
+        const hasSurf = oneIn(10)
+        const hasHair = oneIn(5)
+        const hairType = randomInt(1, 3)
 
         // accessories
         let crown = path.join(__dirname, './res/accessories/crown.svg')
@@ -170,19 +196,37 @@ const getBackgroundColorIndex = (baseIndex) => {
         let mouth = path.join(__dirname, './res/accessories/mouth.svg')
         let crying = path.join(__dirname, './res/accessories/crying.svg')
         let lazr = path.join(__dirname, './res/accessories/lazr.svg')
+        let dualToneHead = path.join(__dirname, './res/accessories/dual_tones_head.svg')
+        let dualTonBody = path.join(__dirname, './res/accessories/dual_tones_body.svg')
+        let glasses = path.join(__dirname, './res/accessories/glasses.svg')
+        let glassesGradient = path.join(__dirname, './res/accessories/glasses_gradient.svg')
+        let hair = path.join(__dirname, './res/accessories/hair.svg')
+        let hat = path.join(__dirname, './res/accessories/hat.svg')
+        let surf = path.join(__dirname, './res/accessories/surf.svg')
+        let water = path.join(__dirname, './res/accessories/water.svg')
         // colors
 
-        const [orange] = colors
         // traits
         ctx.drawImage(await colorize(background, [['red', backgroundColor]]), 0, 0)
         ctx.drawImage(await colorize(
             head,
-            await getHeadModifiers(baseColor, eyesColor)
+            headModifiers
         ), 7, 6)
 
-        ctx.drawImage(await colorize(eyes, await getEyesModifiers(eyesColor)), 8, 7)
-        ctx.drawImage(await colorize(body, await getBodyModifiers(bodyStyle, bodyColor, backgroundColor)), 7, 9)
+        ctx.drawImage(await colorize(eyes, await getEyesModifiers(eyesColor, headModifiers)), 8, 7)
+        if (hasGlasses) {
+            if (hasGlassesGradient) {
+                ctx.drawImage(await colorize(glassesGradient, [['red', adjustLightness(bodyColor, 20)], ['green', adjustLightness(carapaceColor, 90)]]), 8, 7)
+            } else {
+                ctx.drawImage(await colorize(glasses, [['red', 'black']]), 8, 7)
+            }
+        }
 
+        hasSurf && ctx.drawImage(await colorize(surf, await getSurfModifiers(backgroundColor)), 0, 9)
+
+        ctx.drawImage(await colorize(body, await getBodyModifiers(bodyStyle, bodyColor, backgroundColor)), 7, 9)
+        if (isDualTones) ctx.drawImage(await colorize(dualToneHead, [['red', dualToneColor]]), 9, 6)
+        if (isDualTones) ctx.drawImage(await colorize(dualTonBody, [['red', adjustLightness(dualToneColor, 90)]]), 9, 9)
         ctx.drawImage(await colorize(hands, [
             ['red', adjustLightness(baseColor, 70)],
         ]), 7, 10)
@@ -198,6 +242,7 @@ const getBackgroundColorIndex = (baseIndex) => {
             ['blue', adjustLightness(baseColor, 40)],
         ]), 4, 9)
         //
+
         if (hasEgg) {
             let eggColor = carapaceColor
             ctx.drawImage(await colorize(egg, [
@@ -208,7 +253,7 @@ const getBackgroundColorIndex = (baseIndex) => {
         if (hasCrown) {
             let crownColor = colors[randomInt(3, colorsNumber)]
             ctx.drawImage(await colorize(crown, [
-                ['red', adjustLightness(crownColor, 60)],
+                ['red', adjustLightness(crownColor, 70)],
                 ['green', adjustLightness(crownColor, 40)],
             ]), 7, 4)
         }
@@ -235,11 +280,32 @@ const getBackgroundColorIndex = (baseIndex) => {
                     ]), 9, 8)
             }
         }
+        //hasWater && ctx.drawImage(await colorize(water, [['red', '#69DFFF']]), 9, 8)
 
         if (isCrying) {
             ctx.drawImage(await loadImage(crying), 7, 8)
         } else if (hasLazr) {
             ctx.drawImage(await loadImage(lazr), 8, 7)
+        }
+        if (hasHair && !hasCrown) {
+            let hairColor = colors[randomInt(0, colorsNumber)]
+            switch (hairType) {
+                case 1:
+                    ctx.drawImage(await colorize(hair, [
+                        ['red', adjustLightness(hairColor, 30)],
+                    ]), 6, 5)
+                    break;
+                case 2:
+                    ctx.drawImage(await colorize(hair, [
+                        ['red', adjustLightness(hairColor, 30)],
+                    ]), 6, 5)
+                    break;
+                case 3:
+                    ctx.drawImage(await colorize(hair, [
+                        ['red', adjustLightness(hairColor, 30)],
+                    ]), 6, 5)
+                    break;
+            }
         }
 
         const inputPath = path.join(__dirname, `./outputs/${name}_${a}.png`);
