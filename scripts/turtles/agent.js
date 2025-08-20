@@ -24,6 +24,7 @@ const tail = path.join(__dirname, './res/tail/tail.svg')
 const carapace = path.join(__dirname, './res/carapace/carapace.svg')
 const palette = path.join(__dirname, './res/palette.png')
 
+const metadata = []
 // ensure that body color is different tint as bg
 
 const getCarapaceModifiers = async (carapaceColor) => {
@@ -37,7 +38,6 @@ const getBodyModifiers = async (bodyStyle, bodyColor, backgroundColor) => {
     const palette = await getPalette()
     if (bodyColor === backgroundColor) return await getBodyModifiers(bodyStyle, bodyColor, adjustLightness(palette[randomInt(0, colorsNumber)], 90))
 
-    console.log(bodyStyle, bodyColor, backgroundColor)
     switch (bodyStyle) {
         case 0:
             return [
@@ -82,7 +82,6 @@ const getEyesModifiers = async (color, headModifiers) => {
     if (hasBlack) color = '#ffffff'
     if (hasWhite) color = '#000000'
 
-    console.log(headModifiers, hasCustomEyes, headModifiers[1][1], color)
     if (hasCustomEyes) {
         return [['black', color]]
     }
@@ -151,17 +150,54 @@ const getBackgroundColorIndex = (baseIndex) => {
     }
     return color
 }
-(async () => {
 
+(async () => {
     const size = 16;
     const name = 'turtle'
     const canvas = createCanvas(size, size);
     const ctx = canvas.getContext('2d');
 
-
     const colors = await getPalette()
     for (const a in [...Array(1000).keys()]) {
 
+        let metadata = {
+            head: {
+                gradient_head: false,
+                dual_tones: false,
+                mask: false,
+            },
+            expression: {
+                neutral: false,
+                shouting: false,
+                smiling: false,
+                crying: false,
+            },
+            body: {
+                dual_tones: false,
+                neutral: false,
+                striped: false,
+            },
+            hat: {
+                neutral: false,
+                cap: false,
+                bandana: false,
+            },
+            eyes: {
+                neutral: false,
+                white: false,
+                glasses: false,
+                glasses_gradient: false,
+            },
+            carapace: {
+                neutral: false,
+            },
+            background: {
+                flat: false
+            },
+            crown: false,
+            lazr: false,
+            surf: false
+        }
         const isDualTones = oneIn(20)
         const baseColorIndex = randomInt(3, colorsNumber)
         const baseBackgroundIndex = getBackgroundColorIndex(baseColorIndex)
@@ -175,6 +211,7 @@ const getBackgroundColorIndex = (baseIndex) => {
         const bodyColor = adjustLightness(colors[baseColorIndex], 90)
         const baseColor = adjustLightness(colors[baseColorIndex], 70)
         const backgroundColor = adjustLightness(carapaceColor, 95)
+        const hatColor = adjustLightness(carapaceColor, 50)
         const dualToneColor = colors[dualToneColorIndex]
         // mandatory parts
         const hasCrown = oneIn(5)
@@ -187,8 +224,10 @@ const getBackgroundColorIndex = (baseIndex) => {
         const hasGlassesGradient = oneIn(2)
         const hasWater = oneIn(10)
         const hasSurf = oneIn(10)
-        const hasHair = oneIn(5)
+        const hasBandana = oneIn(5)
         const hairType = randomInt(1, 3)
+        const hasHat = oneIn(20)
+        const hatType = randomInt(1, 3)
 
         // accessories
         let crown = path.join(__dirname, './res/accessories/crown.svg')
@@ -200,7 +239,7 @@ const getBackgroundColorIndex = (baseIndex) => {
         let dualTonBody = path.join(__dirname, './res/accessories/dual_tones_body.svg')
         let glasses = path.join(__dirname, './res/accessories/glasses.svg')
         let glassesGradient = path.join(__dirname, './res/accessories/glasses_gradient.svg')
-        let hair = path.join(__dirname, './res/accessories/hair.svg')
+        let bandana = path.join(__dirname, './res/accessories/bandana.svg')
         let hat = path.join(__dirname, './res/accessories/hat.svg')
         let surf = path.join(__dirname, './res/accessories/surf.svg')
         let water = path.join(__dirname, './res/accessories/water.svg')
@@ -227,6 +266,7 @@ const getBackgroundColorIndex = (baseIndex) => {
         ctx.drawImage(await colorize(body, await getBodyModifiers(bodyStyle, bodyColor, backgroundColor)), 7, 9)
         if (isDualTones) ctx.drawImage(await colorize(dualToneHead, [['red', dualToneColor]]), 9, 6)
         if (isDualTones) ctx.drawImage(await colorize(dualTonBody, [['red', adjustLightness(dualToneColor, 90)]]), 9, 9)
+
         ctx.drawImage(await colorize(hands, [
             ['red', adjustLightness(baseColor, 70)],
         ]), 7, 10)
@@ -287,27 +327,48 @@ const getBackgroundColorIndex = (baseIndex) => {
         } else if (hasLazr) {
             ctx.drawImage(await loadImage(lazr), 8, 7)
         }
-        if (hasHair && !hasCrown) {
+        if (hasBandana && !hasCrown && !hasHat) {
             let hairColor = colors[randomInt(0, colorsNumber)]
             switch (hairType) {
                 case 1:
-                    ctx.drawImage(await colorize(hair, [
+                    ctx.drawImage(await colorize(bandana, [
                         ['red', adjustLightness(hairColor, 30)],
-                    ]), 6, 5)
+                    ]), 6, 6)
                     break;
                 case 2:
-                    ctx.drawImage(await colorize(hair, [
+                    ctx.drawImage(await colorize(bandana, [
                         ['red', adjustLightness(hairColor, 30)],
-                    ]), 6, 5)
+                    ]), 6, 6)
                     break;
                 case 3:
-                    ctx.drawImage(await colorize(hair, [
+                    ctx.drawImage(await colorize(bandana, [
                         ['red', adjustLightness(hairColor, 30)],
-                    ]), 6, 5)
+                    ]), 6, 6)
                     break;
             }
         }
 
+        if (!hasCrown && hasHat) {
+            console.log('hatType', hatType)
+            switch (hatType) {
+                case 1:
+                    ctx.drawImage(await colorize(hat, [
+                        ['red', adjustLightness(hatColor, 60)],
+                        ['blue', adjustLightness(hatColor, 65)],
+                        ['green', 'transparent'],
+                        ['yellow', 'transparent'],
+                    ]), 6, 4)
+                    break;
+                case 2:
+                    ctx.drawImage(await colorize(hat, [
+                        ['red', adjustLightness(hatColor, 60)],
+                        ['green', adjustLightness(hatColor, 60)],
+                        ['blue', adjustLightness(hatColor, 65)],
+                        ['yellow', adjustLightness(hatColor, 65)],
+                    ]), 6, 4)
+                    break;
+            }
+        }
         const inputPath = path.join(__dirname, `./outputs/${name}_${a}.png`);
         const outPath = path.join(__dirname, `./outputs/${name}.svg`);
         const out = fs.createWriteStream(inputPath);

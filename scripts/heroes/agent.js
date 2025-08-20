@@ -231,7 +231,7 @@ const generateArt = async (name, gender, type) => {
                 neck: await loadImage(path.join(__dirname, `./res/female/body/${side}/neck.svg`)),
                 naked: null,
                 hair: [
-                    path.join(__dirname, './res/female/hair/hair.svg')
+                    path.join(__dirname, './res/female/hair/bandana.svg')
                 ],
                 modifiers: {
                     colors: {
