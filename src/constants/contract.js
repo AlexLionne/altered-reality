@@ -3,7 +3,7 @@ import {parseEther} from 'viem';
 import {useMemo} from 'react';
 import {baseSepolia} from "wagmi/chains";
 
-export const CONTRACT_ADDRESS = process.env.SEASON_1_CONTRACT_ADDRESS
+export const CONTRACT_ADDRESS = import.meta.env.VITE_SEASON_1_CONTRACT_ADDRESS
 
 export const ABI = [{"inputs": [], "stateMutability": "nonpayable", "type": "constructor"}, {
     "inputs": [],

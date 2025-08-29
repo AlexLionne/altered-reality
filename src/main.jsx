@@ -22,7 +22,7 @@ const metadata = {
     url: 'https://app.turtlets.xyz', // origin must match your domain & subdomain
     icons: ['https://pbs.twimg.com/profile_images/1956833176065572864/kFJkK4zF_400x400.jpg']
 }
-const projectId = process.env.PROJECT_ID;
+const projectId = import.meta.env.VITE_PROJECT_ID;
 
 const networks = [baseSepolia];
 
