@@ -1,4 +1,3 @@
-import {StrictMode} from 'react'
 import {createRoot} from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
@@ -20,10 +19,10 @@ gsap.registerPlugin(useGSAP);
 const metadata = {
     name: 'Turtlets',
     description: 'Turtlets App',
-    url: 'https://web3.turtlets.com', // origin must match your domain & subdomain
-    icons: ['https://avatars.githubusercontent.com/u/179229932']
+    url: 'https://app.turtlets.xyz', // origin must match your domain & subdomain
+    icons: ['https://pbs.twimg.com/profile_images/1956833176065572864/kFJkK4zF_400x400.jpg']
 }
-const projectId = "252ac2900f56cdb940c0b362ee8b7ff5";
+const projectId = process.env.PROJECT_ID;
 
 const networks = [baseSepolia];
 
