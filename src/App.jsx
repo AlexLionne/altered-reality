@@ -10,8 +10,6 @@ import {PlaceholderEp3} from "./assets/placeholder-ep-3.jsx";
 import {useAppKitAccount} from "@reown/appkit/react";
 import {Logout} from "./assets/logout.jsx";
 import Slider from "./components/slider.jsx";
-import { Plus, Minus } from 'lucide-react';
-import {Mint} from "./components/mint.jsx";
 import {useAllTokenIds, useTokenURIs, useOwnedTokenIds, useTotalSupply, useMaxSupply} from "./constants/contract.js";
 import {RightDrawer} from "./components/right-drawer.jsx";
 

@@ -4,7 +4,7 @@ import App from './App.jsx'
 import gsap from 'gsap';
 import {useGSAP} from '@gsap/react';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-
+import { inject } from '@vercel/analytics';
 //
 import { createAppKit } from '@reown/appkit/react'
 import { WagmiProvider } from 'wagmi'
@@ -42,6 +42,7 @@ createAppKit({
     features: { analytics: false },
 });
 const queryClient = new QueryClient();
+inject();
 
 
 createRoot(document.getElementById('root')).render(
