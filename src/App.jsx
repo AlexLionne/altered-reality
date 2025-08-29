@@ -1,611 +1,294 @@
-import React, {useEffect, useRef, useState} from 'react'
-import {Canvas, extend, useFrame, useThree} from '@react-three/fiber'
-import {OrbitControls, useGLTF} from '@react-three/drei'
-import * as THREE from 'three'
-import WarpMaterialModel from "./materials/WarpMaterialModel.js"
-import BodyWarpMaterialModel from "./materials/BodyWarpMaterialModel.js"
-import WarpMaterialBackground from "./materials/WarpMaterialBackground.js"
-import {useGUI} from "./hooks/useGUI.js"
-import NightSkyMaterial from "./materials/NightSkyMaterial.js";
-import {settings} from "./settings/index.js";
+import {GridBG} from './assets/grid.jsx'
+import {Logo} from "./assets/logo.jsx";
+import {Placeholder} from "./assets/placeholder.jsx";
+import {Wallet} from "./assets/wallet.jsx";
+import {Locked} from "./assets/locked.jsx";
+import gsap from 'gsap'
+import {useRef, useEffect, useState} from 'react';
+import {PlaceholderEp2} from "./assets/placeholder-ep-2.jsx";
+import {PlaceholderEp3} from "./assets/placeholder-ep-3.jsx";
+import {useAppKitAccount} from "@reown/appkit/react";
+import {Logout} from "./assets/logout.jsx";
+import Slider from "./components/slider.jsx";
+import { Plus, Minus } from 'lucide-react';
+import {Mint} from "./components/mint.jsx";
+import {useAllTokenIds, useTokenURIs, useOwnedTokenIds, useTotalSupply, useMaxSupply} from "./constants/contract.js";
+import {RightDrawer} from "./components/right-drawer.jsx";
 
-// 1) Extend deux shaders : modèle (avec éclairage/réflection) et fond (pattern seul)
-extend({
-    WarpMaterialModel,
-    WarpMaterialBackground,
-    BodyWarpMaterialModel,
-    NightSkyMaterial
-})
 
-function lightenHexColor(hex, amount = 0.2) {
-    // Retire le #
-    hex = hex.replace(/^#/, '');
-
-    // Supporte les hex courts (#fff)
-    if (hex.length === 3) {
-        hex = hex.split('').map(c => c + c).join('');
-    }
-
-    const num = parseInt(hex, 16);
-
-    let r = (num >> 16) & 0xff;
-    let g = (num >> 8) & 0xff;
-    let b = num & 0xff;
-
-    // Applique l’éclaircissement
-    r = Math.min(255, Math.floor(r + (255 - r) * amount));
-    g = Math.min(255, Math.floor(g + (255 - g) * amount));
-    b = Math.min(255, Math.floor(b + (255 - b) * amount));
-
-    return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
-}
-
-const getRandomColor = () => {
-    const h = Math.floor(Math.random() * 360);
-    const s = 100;
-    const l = 50;
-    const rgb = hslToRgbWithIntensity(h / 360, s / 100, l / 100, 2);
-    return '#' + rgb.map(x => x.toString(16).padStart(2, '0')).join('');
-};
-
-function hslToRgbWithIntensity(h, s, l, intensity = 1) {
-    // Clamp intensity entre 0 et 1
-    intensity = Math.max(0, Math.min(1, intensity))
-
-    // Appliquer l'intensité à saturation et luminosité
-    s *= intensity
-    l = l * (1 - intensity) + 0.5 * intensity  // Tire vers 0.5 à haute intensité
-
-    return hslToRgb(h, s, l)
-}
-
-function hslToRgb(h, s, l) {
-    let r, g, b
-    if (s === 0) {
-        r = g = b = l
-    } else {
-        const hue2rgb = (p, q, t) => {
-            if (t < 0) t += 1
-            if (t > 1) t -= 1
-            if (t < 1 / 6) return p + (q - p) * 6 * t
-            if (t < 1 / 2) return q
-            if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6
-            return p
-        }
-        //Y?vmrCD!Y@K7$-L
-        const q = l < 0.5 ? l * (1 + s) : l + s - l * s
-        const p = 2 * l - q
-        r = hue2rgb(p, q, h + 1 / 3)
-        g = hue2rgb(p, q, h)
-        b = hue2rgb(p, q, h - 1 / 3)
-    }
-    return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)]
-}
-
-/**
- * Décode un seed de 36 caractères hex :
- * [type:2] [durée:4] [couleur1:6]...[couleur5:6]
- */
-function parseSeed(seed) {
-    if (typeof seed !== "string") throw new Error("Seed doit être une chaîne.");
-    const hex = seed.replace(/^0x/i, "").toUpperCase();
-
-    if (!/^[0-9A-F]+$/.test(hex)) {
-        throw new Error("Seed contient des caractères non-hexadécimaux.");
-    }
-    if (hex.length !== 36) {
-        throw new Error(`Longueur invalide: attendu 36, reçu ${hex.length}.`);
-    }
-
-    // Slicing
-    const typeHex = hex.slice(0, 2);
-    const durationHex = hex.slice(2, 6);
-    const colorsHex = hex.slice(6); // 30 car = 5 * 6
-
-    const type = parseInt(typeHex, 16);
-    const duration = parseInt(durationHex, 16);
-
-    // Optionnel: valider les bornes prévues
-    if (type < 1 || type > 2) {
-        throw new Error(`Type hors bornes (1..2): ${type}`);
-    }
-    if (duration < 0 || duration > 10000) {
-        throw new Error(`Durée hors bornes (0..10000): ${duration}`);
-    }
-
-    // Découpe des 5 couleurs (6 car chacune)
-    const colors = [];
-    for (let i = 0; i < 5; i++) {
-        const start = i * 6;
-        const hexColor = colorsHex.slice(start, start + 6);
-        colors.push("#" + hexColor);
-    }
-
-    return {type, duration, colors};
-}
-
-export default function App() {
-    const params = new URLSearchParams(window.location.search);
-    const ts = null
-    const seed = null
-    // ——— États liquides & couleurs ———
-   // const seed = parseSeed(new URLSearchParams(window.location.search).get('seed'))
-    //let {type, duration: ts, colors} = seed
-
-    const type = parseInt(params.get('type'))
-    /*if (type === 2) {
-        colors = colors.map((c, id) => ({id, value: c, intensity: 2}))
-    } else {
-        colors = colors.map((c, id) => ({id, value: c, intensity: 1}))
-    }*/
-
-    const [liquid, setLiquid] = useState({
-        colors: settings,
-        intensity: 2,
-        level: 2,
-        seed: 0,
-        yBias: 10,
-    })
-    const [pixelSize, setPixelSize] = useState(0)
-
-    const addColor = () => {
-        setLiquid(l => {
-            if (l.colors.length >= 5) return l
-            return {
-                ...l,
-                colors: [...l.colors, {id: l.colors.length + 1, value: '#ffffff', intensity: 1}]
-            }
-        })
-    }
-    const removeColor = id =>
-        setLiquid(l => ({...l, colors: l.colors.filter(c => c.id !== id)}))
-    const updateColorValue = (id, v) =>
-        setLiquid(l => ({
-            ...l,
-            colors: l.colors.map(c => (c.id === id ? {...c, value: v} : c))
-        }))
-    const updateColorIntensity = (id, i) =>
-        setLiquid(l => ({
-            ...l,
-            colors: l.colors.map(c => (c.id === id ? {...c, intensity: i} : c))
-        }))
-    const moveColorUp = i => {
-        setLiquid(l => {
-            if (i === 0) return l
-            const a = [...l.colors]
-            ;[a[i - 1], a[i]] = [a[i], a[i - 1]]
-            return {...l, colors: a}
-        })
-    }
-    const moveColorDown = i => {
-        setLiquid(l => {
-            if (i === l.colors.length - 1) return l
-            const a = [...l.colors]
-            ;[a[i], a[i + 1]] = [a[i + 1], a[i]]
-            return {...l, colors: a}
-        })
-    }
+function Loader() {
+    const container = useRef();
 
     useEffect(() => {
-        if (type) {
-            if (type === 1) {
-                randomizeColors(0.5)
-            } else {
-                randomizeColors(2)
-            }
-        }
+        let tl = gsap.timeline();
+        tl.to(".logo", {duration: 1, opacity: 0})
+        tl.to(".logo", {duration: 1, opacity: 1})
+        tl.resume()
+        tl.repeat(-1)
     }, []);
-// ——— États shader ———
-    const [dx, setDx] = useState(1)
-    const [dy, setDy] = useState(1)
-    const [deformAmplitude, setDeformAmplitude] = useState(0)  // Nouvel état pour l'amplitude
-    const [noiseScale, setNoiseScale] = useState(1)
-    const [opacity, setOpacity] = useState(1)
-    const [cartoonLvls, setCartoonLvls] = useState(5)
-    const [roughness, setRoughness] = useState(1)
-    const [reflectivity, setReflectivity] = useState(0)
-    const [brightness, setBrightness] = useState(0)
 
 
-    const matRef = useRef()
-    const matRef2 = useRef()
-    const timeOffset = useRef(300)
-// export
-    const isExportingVideo = useRef(false)
-    const exportBaseTime = useRef(ts || Math.random() * 10000)
-    const exportFrame = useRef(0)
+    return <div className="h-screen w-screen flex items-center justify-center m-0">
+        <Logo className={'logo'} scale={6} ref={container}/>
+    </div>
+}
 
-// ——— Hook GUI ———
-    useGUI(gui => {
-        // Shader controls
-        gui.add({dx}, 'dx', 0, 1, 0.01).name('Dépl X').onChange(setDx)
-        gui.add({dy}, 'dy', 0, 1, 0.01).name('Dépl Y').onChange(setDy)
-        gui.add({deformAmplitude}, 'deformAmplitude', 0, 2, 0.01).name('Ampl. Déform').onChange(setDeformAmplitude)  // Nouveau contrôle GUI
-        gui.add({noiseScale}, 'noiseScale', 0, 2, 0.01).name('Échelle bruit').onChange(setNoiseScale)
-        gui.add({opacity}, 'opacity', 0, 1, 0.01).name('Opacité').onChange(setOpacity)
-        gui.add({cartoonLvls}, 'cartoonLvls', 0, 100, 1).name('Cartoon Lvls').onChange(setCartoonLvls)
-        gui.add({roughness}, 'roughness', 0, 1, 0.01).name('Roughness').onChange(setRoughness)
-        gui.add({reflectivity}, 'reflectivity', 0, 1, 0.01).name('Reflectivity').onChange(setReflectivity)
-        gui.add({brightness}, 'brightness', 0, 1, 0.01)
-            .name('Éclaircir')
-            .onChange(setBrightness)
-        gui.add({pixelSize}, 'pixelSize', 0, 8, 1).name('Pixel Size').onChange(setPixelSize)
-        gui.add({randomizeColors}, 'randomizeColors').name('Random')
-        const controller = gui.add({exportSceneAsJPG}, 'exportSceneAsJPG').name('Exporter');
-        controller.domElement.querySelector('button').id = 'export-button';
-        gui.add({runExport}, 'runExport').name('Exporter 100')
-        gui.add({startExportVideo}, 'startExportVideo').name('Video Exporter')
+function NftViewer({ dataUri }) {
+    const base64 = dataUri.split(",")[1];
+    const jsonStr = atob(base64);
+    const metadata = JSON.parse(jsonStr);
 
-        // Liquide folder
-        const lf = gui.addFolder('Liquide')
-        lf.add(liquid, 'intensity', 0, 2, 0.01).name('Intensité')
-            .onChange(v => setLiquid(l => ({...l, intensity: v})))
-        lf.add(liquid, 'level', -2, 2, 0.1).name('Level')
-            .onChange(v => setLiquid(l => ({...l, level: v})))
-        lf.add(liquid, 'yBias', -10, 10, 0.1).name('Y Bias')
-            .onChange(v => setLiquid(l => ({...l, yBias: v})))
-        lf.add({addColor}, 'addColor').name('Ajouter couleur')
-            .disable(liquid.colors.length >= 5)
+    return <img className={'h-full w-full'} src={metadata.image_data} alt={metadata.name} />
+}
 
-        liquid.colors.forEach((c, i) => {
-            const cf = lf.addFolder(`Couleur ${c.id}`)
-            cf.addColor(c, 'value').name('Couleur').onChange(v => updateColorValue(c.id, v))
-            cf.add(c, 'intensity', 0, 2, 0.01).name('Intensité')
-                .onChange(v => updateColorIntensity(c.id, v))
-            cf.add({remove: () => removeColor(c.id)}, 'remove').name('Supprimer')
-                .disable(liquid.colors.length <= 1)
-            cf.add({up: () => moveColorUp(i)}, 'up').name('↑').disable(i === 0)
-            cf.add({down: () => moveColorDown(i)}, 'down').name('↓')
-                .disable(i === liquid.colors.length - 1)
-        })
-    })
+function App() {
+    const {address, isConnected} = useAppKitAccount();
 
-    function Scene({seed}) {
-        const {camera} = useThree()
-        const meshRef = useRef()
-        const mesh2Ref = useRef()
-        const {nodes} = useGLTF('/model.glb')
-        const {nodes: nodes2} = useGLTF('/untitled.glb')
-        const {nodes: nodes3} = useGLTF('/skull.glb')
-
-        useFrame((state) => {
-
-            // Fond pattern
-            if (matRef2.current && matRef.current) {
-
-                let ratio = 2
-                const type = parseInt(seed?.type)
-                if (type === 1) ratio = 0.2
-                glRef.current && glRef.current.setClearColor(lightenHexColor(liquid.colors[1].value, 0.5), ratio)
-
-                const outfit = matRef2.current.uniforms
-                const v = matRef.current.uniforms
-
-                outfit.uTime.value = exportBaseTime.current
-                v.uTime.value = exportBaseTime.current
-
-                outfit.uPixelSize.value = pixelSize
-                v.uPixelSize.value = pixelSize
+    const floor = 0.0020
+    const [isLoading, setIsLoading] = useState(true)
+    const [nbMint, setNbMint] = useState(1)
 
 
-                outfit.uBrightness.value = 0
-                outfit.uResolution.value.set(state.size.width, state.size.height)
-                outfit.uDisplacementX.value = dx
-                outfit.uDisplacementY.value = dy
-                outfit.uDeformAmplitude.value = deformAmplitude  // Mise à jour de la nouvelle uniform
-                outfit.uNoiseScale.value = noiseScale * 1.5
-                outfit.uOpacity.value = opacity
-                outfit.uCartoonLevels.value = cartoonLvls
-                outfit.uRoughness.value = roughness
-                outfit.uReflectivity.value = 0
-                outfit.uEnvMap.value = null  // Désactive l'environnement
-                outfit.uCamPos.value.copy(camera.position)
-                outfit.uColors.value = liquid.colors.map(c => new THREE.Vector3(...new THREE.Color(c.value).toArray()))
-                outfit.uColorIntensities.value = liquid.colors.map(c => c.intensity)
-                outfit.uNumColors.value = liquid.colors.length
-                outfit.uIntensity.value = liquid.intensity
-                outfit.uLevel.value = liquid.level
-                outfit.uSeed.value = liquid.seed
-                outfit.uYBias.value = liquid.yBias
-
-                v.uBrightness.value = brightness
-                v.uResolution.value.set(state.size.width, state.size.height)
-                v.uDisplacementX.value = dx
-                v.uDisplacementY.value = dy
-                v.uDeformAmplitude.value = deformAmplitude  // Mise à jour de la nouvelle uniform
-                v.uNoiseScale.value = noiseScale * 1.5
-                v.uOpacity.value = opacity
-                v.uCartoonLevels.value = cartoonLvls
-                v.uRoughness.value = roughness
-                v.uReflectivity.value = 0
-                v.uEnvMap.value = null  // Désactive l'environnement
-                v.uCamPos.value.copy(camera.position)
-                v.uColors.value = liquid.colors.map(c => new THREE.Vector3(...new THREE.Color(c.value).toArray()))
-                v.uColorIntensities.value = liquid.colors.map(c => c.intensity)
-                v.uNumColors.value = liquid.colors.length
-                v.uIntensity.value = liquid.intensity
-                v.uLevel.value = liquid.level
-                v.uSeed.value = liquid.seed
-                v.uYBias.value = liquid.yBias
-
-
-                //bg.uPixelSize.value = pixelSize
-                //bg.uResolution.value.set(state.size.width, state.size.height)
-                //bg.uDisplacementX.value = dx
-                //bg.uDisplacementY.value = dy
-                //bg.uDeformAmplitude.value = deformAmplitude // Mise à jour de la nouvelle uniform
-                //bg.uNoiseScale.value = noiseScale //* 4
-                //bg.uOpacity.value = 0
-                //bg.uCartoonLevels.value = cartoonLvls
-                //bg.uColors.value = liquid.colors.map(c => new THREE.Vector3(...new THREE.Color(c.value).toArray()))
-                //bg.uColorIntensities.value = liquid.colors.map(c => c.intensity)
-                //bg.uNumColors.value = liquid.colors.length
-                //bg.uIntensity.value = liquid.intensity
-                //bg.uLevel.value = liquid.level
-                //bg.uSeed.value = liquid.seed
-                //bg.uYBias.value = liquid.yBias
-            }
-        })
-
-        return (
-            <group rotation={[0, 0, 0]}>
-
-                <mesh
-                    recieveShadow
-                    castShadow
-                    ref={mesh2Ref}
-                    geometry={nodes2.Beanie_Outfit_V01.geometry}
-                    rotation={[Math.PI / 2, 0, Math.PI]}
-                    position={[0, -10.7, 0]}
-                    scale={0.006}>
-                    <warpMaterialModel ref={matRef2}/>
-                </mesh>
-                <mesh
-                    recieveShadow
-                    castShadow
-                    geometry={nodes3.object_1.geometry}
-                    scale={0.11}
-                    rotation={[Math.PI / 2, 0, Math.PI]}
-                    position={[-0.034, -5.6, -0.2]}
-                >
-                    <meshStandardMaterial color="black"/>
-                </mesh>
-                <mesh
-                    recieveShadow
-                    castShadow
-                    ref={meshRef}
-                    geometry={nodes.mask.geometry}
-                    position={[0, 0, 0]}
-                    rotation={[0, 0, 0]}
-                >
-                    <warpMaterialModel ref={matRef}/>
-                </mesh>
-            </group>
-        )
+    const addToMint = async () => {
+        setNbMint(b => b + 1)
     }
 
-    const glRef = useRef()
-    const sceneRef = useRef()
-    const cameraRef = useRef()
-    const imageCount = useRef(210)
-    const randomizeColors = (intensity = 2) => {
-        setLiquid(l => ({
-            ...l,
-            colors: [
-                {id: 0, value: "#000", intensity: 2},
-                ...l.colors.slice(1, l.colors.length).map(c => ({
-                    ...c,
-                    intensity: intensity,
-                    value: getRandomColor()
-                }))]
-        }))
+    const removeToMint = async () => {
+        setNbMint(b => b - 1)
     }
 
-    const runExport = () => {
-        const interval = setInterval(() => {
-            if (imageCount.current >= 10) {
-                clearInterval(interval)
-                return
-            }
-            setTimeout(() => {
-                exportSceneAsJPG()
-                timeOffset.current = Math.floor(Math.random() * 10000)
-                randomizeColors()
-                imageCount.current++
-            }, 5000)
 
-        }, 10000)
+    useEffect(() => {
+        setTimeout(() => {
+            setIsLoading(false)
+        }, 3000);
+    }, [])
 
-        return () => clearInterval(interval)
-    }
-    const fps = 60
-    const duration = 5
-    const totalFrames = fps * duration
-    const videoCount = useRef(0)
+    const a = useAllTokenIds();
+    const b = useOwnedTokenIds(address);
+    const tokens = useTokenURIs(a);
+    const myTokens = useTokenURIs(b);
 
-    const startExportVideo = async () => {
-        const gl = glRef.current
-        const scene = sceneRef.current
-        const camera = cameraRef.current
-        if (!gl || !scene || !camera) return
-
-        const canvasSize = gl.domElement.getBoundingClientRect()
-        const factor = 10
-        const width = Math.floor(canvasSize.width * factor)
-        const height = Math.floor(canvasSize.height * factor)
-        const renderTarget = new THREE.WebGLRenderTarget(width, height)
-        renderTarget.texture.encoding = gl.outputEncoding
+    const {data: totalSupply} = useTotalSupply();
+    const {data: maxSupply} = useMaxSupply();
+    const [selectedToken, setSelectedToken] = useState(undefined);
 
 
-        exportFrame.current = 0
-        isExportingVideo.current = true
+    if (isLoading) return (
+        <Loader/>
+    )
 
-        for (let frame = 0; frame < totalFrames; frame++) {
-            exportFrame.current = frame
-            exportBaseTime.current = exportBaseTime.current + 1
-            console.log('exporting frame', frame)
-            // Attend le rendu complet de la frame
-            await new Promise(resolve => requestAnimationFrame(resolve))
-
-            gl.setRenderTarget(renderTarget)
-            gl.setSize(width, height)
-            camera.updateProjectionMatrix()
-            gl.render(scene, camera)
-
-            const buffer = new Uint8Array(width * height * 4)
-            gl.readRenderTargetPixels(renderTarget, 0, 0, width, height, buffer)
-
-            const canvas = document.createElement('canvas')
-            canvas.width = width
-            canvas.height = height
-            const ctx = canvas.getContext('2d')
-            const imageData = ctx.createImageData(width, height)
-
-            for (let y = 0; y < height; y++) {
-                for (let x = 0; x < width; x++) {
-                    const src = ((height - y - 1) * width + x) * 4
-                    const dst = (y * width + x) * 4
-                    imageData.data[dst] = buffer[src]
-                    imageData.data[dst + 1] = buffer[src + 1]
-                    imageData.data[dst + 2] = buffer[src + 2]
-                    imageData.data[dst + 3] = buffer[src + 3]
-                }
-            }
-
-            ctx.putImageData(imageData, 0, 0)
-
-            await new Promise(resolve => {
-                canvas.toBlob(blob => {
-                    const url = URL.createObjectURL(blob)
-                    const a = document.createElement('a')
-                    a.href = url
-                    a.download = `video${videoCount.current.toString().padStart(2, '0')}_frame_${frame.toString().padStart(3, '0')}.png`
-                    a.click()
-                    URL.revokeObjectURL(url)
-                    resolve()
-                }, 'image/png')
-            })
-            await new Promise(resolve => setTimeout(resolve, 5000))
-        }
-
-        isExportingVideo.current = false
-        videoCount.current++
-        renderTarget.dispose()
-        gl.setRenderTarget(null)
-        //ffmpeg -framerate 60 -i video00_frame_%03d.png -c:v libx264 -pix_fmt yuv420p output.mp4
-    }
-
-    const exportSceneAsJPG = () => {
-        const gl = glRef.current
-        const scene = sceneRef.current
-        const camera = cameraRef.current
-
-        if (!gl || !scene || !camera) return
-
-        const originalSize = new THREE.Vector2()
-        gl.getSize(originalSize)
-
-        const originalZoom = camera.zoom
-
-        // Résolution cible
-        const canvasSize = gl.domElement.getBoundingClientRect()
-        const factor = 15 // qualité x10
-        const width = Math.floor(canvasSize.width * factor)
-        const height = Math.floor(canvasSize.height * factor)
-
-        // Préparer un render target 4K
-        const renderTarget = new THREE.WebGLRenderTarget(width, height)
-        renderTarget.texture.encoding = gl.outputEncoding
-
-        // Redimensionner temporairement le renderer
-        gl.setRenderTarget(renderTarget)
-        gl.setSize(width, height)
-
-        // Garder les bornes camera.left/right/top/bottom INCHANGÉES
-        // Juste s’assurer que le zoom reste cohérent
-        camera.zoom = originalZoom
-        camera.updateProjectionMatrix()
-
-        // Forcer les matériaux visibles
-        scene.traverse(obj => {
-            if (obj.material?.uniforms?.uOpacity !== undefined) {
-                obj.material.uniforms.uOpacity.value = 1
-            }
-        })
-
-        // Rendu
-        gl.render(scene, camera)
-
-        // Lecture pixels
-        const buffer = new Uint8Array(width * height * 4)
-        gl.readRenderTargetPixels(renderTarget, 0, 0, width, height, buffer)
-
-        // Conversion en canvas
-        const canvas = document.createElement('canvas')
-        canvas.width = width
-        canvas.height = height
-        const ctx = canvas.getContext('2d')
-        const imageData = ctx.createImageData(width, height)
-
-        for (let y = 0; y < height; y++) {
-            for (let x = 0; x < width; x++) {
-                const src = ((height - y - 1) * width + x) * 4
-                const dst = (y * width + x) * 4
-                imageData.data[dst] = buffer[src]
-                imageData.data[dst + 1] = buffer[src + 1]
-                imageData.data[dst + 2] = buffer[src + 2]
-                imageData.data[dst + 3] = buffer[src + 3]
-            }
-        }
-
-        ctx.putImageData(imageData, 0, 0)
-
-        // Téléchargement
-        const dataURL = canvas.toDataURL('image/jpeg', 1.0)
-        const link = document.createElement('a')
-        link.href = dataURL
-        link.download = `${imageCount.current}.jpg`
-        link.click()
-
-        // Nettoyage
-        renderTarget.dispose()
-        gl.setRenderTarget(null)
-        gl.setSize(originalSize.x, originalSize.y)
-        camera.zoom = originalZoom
-        camera.updateProjectionMatrix()
-    }
-
+    const prettyAddress = address ? address.slice(0, 6) + '...' + address.slice(-4) : null
 
     return (
-        <div style={{width: 400, height: 400, margin: 'auto', backgroundColor: 'black'}}>
-            <Canvas
-                onCreated={({gl, scene, camera}) => {
-                    glRef.current = gl
-                    sceneRef.current = scene
-                    cameraRef.current = camera
-                }}
-                orthographic
-                camera={{
-                    left: -2.7,
-                    right: 2.7,
-                    top: 2,
-                    bottom: -2.2,
-                    near: 0.1,
-                    far: 100,
-                    position: [0, 0, -2],
-                    zoom: 1.4
-                }}
-            >
-                <ambientLight castShadow intensity={5}/>
-                <directionalLight castShadow intensity={20} color={'blue'} position={[0, 10, -1]}/>
-                <directionalLight castShadow intensity={20} color={'white'} position={[0, 1, -1]}/>
-                <OrbitControls/>
-                <Scene seed={seed}/>
-            </Canvas>
+        <div className="sm:p-12 relative select-none h-full w-full p-0 m-0">
+            <header className="w-full max-w-[1639px] sticky top-0 left-0 right-0 m-auto z-50">
+                <div className="mx-auto bg-black">
+                    {/* --- Mobile (<= sm) : barre compacte --- */}
+                    <div className="flex items-center justify-between h-14 sm:hidden">
+                        <button
+                            type="button"
+                            aria-label="Ouvrir le menu"
+                            className="flex items-start"
+                        >
+                            <Placeholder scale={5}/>
+                        </button>
+
+                        <div className="flex items-center gap-2">
+                            <Logo scale={6}/>
+                            <span className="text-base font-semibold pixel-font-2 leading-none">TTR</span>
+                        </div>
+
+                        <div className="flex items-center cursor-pointer">
+                            <Wallet/>
+                        </div>
+                    </div>
+
+                    {/* --- Desktop (>= sm) : grille 3 colonnes --- */}
+                    <div className="hidden sm:grid grid-cols-1 sm:grid-cols-3 items-center">
+                        {/* Colonne gauche : marque */}
+                        <div className="flex items-center justify-start gap-4">
+                            <Placeholder scale={7}/>
+                            <div className="leading-tight">
+                                <p className="text-lg lg:text-xl pixel-font-2">The</p>
+                                <p className="text-lg lg:text-xl pixel-font-2">Turtlets</p>
+                                <p className="text-lg lg:text-xl pixel-font-2">Season one - The bay</p>
+                            </div>
+                        </div>
+
+                        {/* Colonne centre : logo */}
+                        <div className="flex items-center justify-center">
+                            <Logo scale={7}/>
+                        </div>
+
+                        {/* Colonne droite : wallet */}
+                        <div className="flex items-center justify-end cursor-pointer">
+                            {
+                                isConnected ?
+                                    <div className={'flex flex-row items-center justify-end gap-4'}>
+                                        <p className={'pixel-font-2 text-white'}>{prettyAddress}</p>
+                                        <Logout/>
+                                    </div>
+                                    :
+                                    <Wallet/>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </header>
+            <section className="py-16 px-6 text-center">
+                <h2 className="text-3xl md:text-4xl font-bold text-white pixel-font-2">
+                    A Reef with a Purpose 🌍
+                </h2>
+                <p className="pixel-font-2 mt-6 max-w-3xl mx-auto text-white leading-relaxed">
+                    The Turtlets is a living story where each chapter
+                    brings new clans, rare hybrids, and legendary Tortlets. Beyond the pixels, every mint fuels
+                    a real mission: <span style={{color: 'rgb(0, 133, 255)'}} className="font-semibold">supporting ocean preservation foundations </span>
+                    fighting to protect marine life and habitats.
+                </p>
+                <p style={{color: 'rgb(0, 133, 255)'}} className="pixel-font-2 mt-4 max-w-3xl mx-auto text-white/70 leading-relaxed">
+                    It’s a symbol of migration, evolution,
+                    and survival. both in the Reef, and in the oceans we share 🩵
+                </p>
+            </section>
+
+            <div className={'h-full w-full'}>
+                <div className="flex flex-col items-center justify-center h-full text-white">
+                    <div
+                        className={'w-full max-w-[1639px] flex flex-row items-center flex-1 justify-between mb-8 text-center mt-8'}>
+                        <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-12 p-4">
+                            <div>
+                                <p className={'pixel-font-2'}>Season completion</p>
+                                <h1 className={'pixel-font-2 text-3xl'}>{(Number(tokens.length)/Number(260) * 100).toFixed(1)}%</h1>
+                            </div>
+                            <div>
+                                <p className={'pixel-font-2'}>Turtlets saved</p>
+                                <p className={'pixel-font-2 text-3xl'}>{totalSupply}/{maxSupply}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className={'mb-8 w-full max-w-[1639px]'}>
+                        <GridBG tokens={tokens} onItemClick={(index) => setSelectedToken(index)}/>
+                    </div>
+                    <div className={'flex flex-col items-start justify-start text-align-left mb-8 w-full max-w-[1639px]'}>
+                        <p className={'pixel-font-2 text-3xl mb-8'}>My Turtlets</p>
+                        {!myTokens.length && <div className={'flex flex-1 w-full flex-row items-center justify-center'}>
+                            {isConnected && <p className="pixel-font-2 max-w-3xl mx-auto text-white/70 leading-relaxed text-align-center">
+                                Start minting a Turtlet and help us saving the ocean 🩵
+                            </p>}
+                            {!isConnected && <p className="pixel-font-2 max-w-3xl mx-auto text-white/70 leading-relaxed text-align-center">
+                                Connect your wallet 🩵
+                            </p>}
+                        </div>}
+                        <div className={'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-10 gap-4 max-w-5xl mx-auto mb-8'}>
+                            {myTokens.map((dataUri, i) => {
+                                if (!dataUri) return null;
+                                return <NftViewer dataUri={dataUri}/>
+                            })}
+                        </div>
+                    </div>
+                    <div>
+                        <a
+                           className="flex pixel-font-3 text-3xl px-12 bg-white text-black items-center justify-center cursor-pointer hover:bg-black hover:text-white hover:ring-1 hover:ring-white h-[64px]">
+                            <p>{`MINT ON MINTBAY`}</p>
+                        </a>
+                    </div>
+                    {/*<div className={'flex flex-row items-center justify-center'}>
+                        <Mint qty={nbMint}/>
+                        <a onClick={addToMint}
+                            className={'flex pixel-font-3 text-3xl bg-white text-black items-center justify-center cursor-pointer hover:bg-black hover:text-white hover:ring-1 hover:ring-white h-[64px] w-[64px]'}>
+                            <Plus size={24} strokeWidth={3} />
+                        </a>
+                        <a onClick={removeToMint}
+                            className={'flex pixel-font-3 text-3xl bg-white text-black items-center justify-center cursor-pointer hover:bg-black hover:text-white hover:ring-1 hover:ring-white h-[64px] w-[64px]'}>
+                            <Minus size={24} strokeWidth={3} />
+                        </a>
+                    </div>*/}
+                    {/*<p className={'pixel-font-3 text-2xl text-white mb-8'}>max supply : 260 - {(floor * nbMint).toFixed(5)} ETH</p>*/}
+                    <div
+                        className={'w-full max-w-[1639px] flex flex-row items-center flex-1 justify-between text-center'}>
+                        <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12 p-4">
+                            <div>
+                                <p className={'pixel-font-2'}>Meet</p>
+                                <p className={'pixel-font-2 text-3xl'}>Turtlets</p>
+                            </div>
+                            <div>
+                                <p className={'pixel-font-2'}>Unlock</p>
+                                <p className={'pixel-font-2 text-3xl'}>New Traits</p>
+                            </div>
+                            <div>
+                                <p className={'pixel-font-2'}>Support</p>
+                                <p className={'pixel-font-2 text-3xl'}>Fair actions</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div
+                        className={'w-full max-w-[1639px] flex flex-row items-center flex-1 justify-between text-center'}>
+                        <Slider
+                            images={[...Array(100).keys()].map(i => '/turtlets/turtle_' + i + '.png')}
+                            itemClass="h-24 w-24 md:h-28 md:w-28 mb-8"
+                            gapClass="gap-3 md:gap-4"
+                            speed={90}
+                            direction={1}
+                        />
+                    </div>
+
+                    <header className="w-full max-w-[1639px]">
+                        <div className="mx-auto bg-black">
+                            <div className="grid grid-cols-3 items-center mb-8">
+                                {/* Colonne gauche : marque */}
+                                <div className="flex items-center justify-start gap-4">
+                                    <PlaceholderEp2 scale={5}/>
+                                    <div className="leading-tight">
+                                        <p className="text-lg lg:text-xl pixel-font-2 text-white/56">The</p>
+                                        <p className="text-lg lg:text-xl pixel-font-2 text-white/56">Turtlets</p>
+                                        <p className="text-lg lg:text-xl pixel-font-2 text-white/56">Season two - The
+                                            reef</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-center">
+                                    <p className={'pixel-font-2 text-white/56'}>Coming next</p>
+                                </div>
+                                <div className="flex items-center justify-end cursor-pointer">
+                                    <Locked/>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-3 items-center mb-8">
+                                <div className="flex items-center justify-start gap-4">
+                                    <PlaceholderEp3 scale={5}/>
+                                    <div className="leading-tight">
+                                        <p className="text-lg lg:text-xl pixel-font-2 text-white/56">The</p>
+                                        <p className="text-lg lg:text-xl pixel-font-2 text-white/56">Turtlets</p>
+                                        <p className="text-lg lg:text-xl pixel-font-2 text-white/56">Season three - The
+                                            sea</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-center">
+                                    <p className={'pixel-font-2 text-white/56'}>Coming next</p>
+                                </div>
+                                <div className="flex items-center justify-end cursor-pointer">
+                                    <Locked/>
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+                </div>
+                <section className="px-6 pixel-font-2" style={{backgroundColor: 'rgb(0, 133, 255)'}}>
+                    <div
+                        className="p-6 text-center"
+                    >
+                        <p className="pixel-font-2 text-lg text-black">{new Date().getFullYear()}. Made from 🌊 by 0xKeinno</p>
+                    </div>
+                </section>
+            </div>
+            <RightDrawer isOpen={selectedToken !== undefined} setIsOpen={setSelectedToken}>
+                <div className={'h-[300px] w-[300px]'}>
+                    <NftViewer dataUri={tokens[selectedToken]}/>
+                </div>
+            </RightDrawer>
         </div>
     )
 }
 
-useGLTF.preload('/model.glb')
-useGLTF.preload('/untitled.glb')
-useGLTF.preload('/skull.glb')
+export default App
