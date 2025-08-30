@@ -160,14 +160,14 @@ function App() {
                                 <h1 className={'pixel-font-2 text-3xl'}>{(Number(tokens.length)/Number(260) * 100).toFixed(1)}%</h1>
                             </div>
                             <div>
-                                <p className={'pixel-font-2'}>Turtlets saved</p>
+                                <p className={'pixel-font-2'}>Total Turtlets saved</p>
                                 <p className={'pixel-font-2 text-3xl'}>{totalSupply}/{maxSupply}</p>
                             </div>
                         </div>
                     </div>
 
                     <div className={'mb-8 w-full max-w-[1639px]'}>
-                        <GridBG tokens={tokens} onItemClick={(index) => setSelectedToken(index)}/>
+                        <GridBG tokens={tokens} onItemClick={(index) => setSelectedToken(tokens[index])}/>
                     </div>
                     <div className={'flex flex-col items-start justify-start text-align-left mb-8 w-full max-w-[1639px]'}>
                         <p className={'pixel-font-2 text-3xl mb-8'}>My Turtlets</p>
@@ -182,7 +182,9 @@ function App() {
                         <div className={'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-10 gap-4 max-w-5xl mx-auto mb-8'}>
                             {myTokens.map((dataUri, i) => {
                                 if (!dataUri) return null;
-                                return <NftViewer dataUri={dataUri}/>
+                                return <a onClick={() => setSelectedToken(dataUri)} key={i}>
+                                    <NftViewer dataUri={dataUri}/>
+                                </a>
                             })}
                         </div>
                     </div>
@@ -282,7 +284,7 @@ function App() {
             </div>
             <RightDrawer isOpen={selectedToken !== undefined} setIsOpen={setSelectedToken}>
                 <div className={'h-[300px] w-[300px]'}>
-                    <NftViewer dataUri={tokens[selectedToken]}/>
+                    <NftViewer dataUri={selectedToken}/>
                 </div>
             </RightDrawer>
         </div>
