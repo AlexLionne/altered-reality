@@ -1,6 +1,6 @@
 export const Placeholder = ({scale}) => {
-    return <svg width={scale*14} height={scale*14} viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect width={scale*14} height={scale*14} fill="#0085FF"/>
+    return <svg width={scale*16} height={scale*16} viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width={scale*16} height={scale*16} fill="#0085FF"/>
         <rect x="7.99902" y="4.99988" width="1" height="1" fill="#0051FF"/>
         <rect x="6.99902" y="4.99988" width="1" height="1" fill="#0051FF"/>
         <rect x="10" y="4.99988" width="1" height="1" fill="#0051FF"/>

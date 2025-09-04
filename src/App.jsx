@@ -71,7 +71,6 @@ function App() {
     const {data: maxSupply} = useMaxSupply();
     const [selectedToken, setSelectedToken] = useState(undefined);
 
-
     if (isLoading) return (
         <Loader/>
     )
@@ -80,16 +79,16 @@ function App() {
 
     return (
         <div className="sm:p-12 relative select-none h-full w-full p-0 m-0">
-            <header className="w-full max-w-[1639px] sticky top-0 left-0 right-0 m-auto z-50">
+            <header className="w-full max-w-[1639px] sticky top-0 left-0 right-0 m-auto z-50 h-[64px]">
                 <div className="mx-auto bg-black">
                     {/* --- Mobile (<= sm) : barre compacte --- */}
-                    <div className="flex items-center justify-between h-14 sm:hidden">
+                    <div className="flex items-center justify-between h-14 sm:hidden h-[64px]">
                         <button
                             type="button"
                             aria-label="Ouvrir le menu"
                             className="flex items-start"
                         >
-                            <Placeholder scale={5}/>
+                            <Placeholder scale={4}/>
                         </button>
 
                         <div className="flex items-center gap-2">
@@ -103,10 +102,10 @@ function App() {
                     </div>
 
                     {/* --- Desktop (>= sm) : grille 3 colonnes --- */}
-                    <div className="hidden sm:grid grid-cols-1 sm:grid-cols-3 items-center">
+                    <div className="hidden sm:grid grid-cols-1 sm:grid-cols-3 items-center ">
                         {/* Colonne gauche : marque */}
                         <div className="flex items-center justify-start gap-4">
-                            <Placeholder scale={7}/>
+                            <Placeholder scale={6}/>
                             <div className="leading-tight">
                                 <p className="text-lg lg:text-xl pixel-font-2">The</p>
                                 <p className="text-lg lg:text-xl pixel-font-2">Turtlets</p>
@@ -116,7 +115,7 @@ function App() {
 
                         {/* Colonne centre : logo */}
                         <div className="flex items-center justify-center">
-                            <Logo scale={7}/>
+                            <Logo scale={6}/>
                         </div>
 
                         {/* Colonne droite : wallet */}
