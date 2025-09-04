@@ -189,6 +189,8 @@ function App() {
                     </div>
                     <div>
                         <a
+                            href={'https://www.mintbay.co/mint/8453/0xF064471223DF83acC8227Cf3D635AEB40A477E09'}
+                            target={'_blank'}
                            className="flex pixel-font-3 text-3xl px-12 bg-white text-black items-center justify-center cursor-pointer hover:bg-black hover:text-white hover:ring-1 hover:ring-white h-[64px]">
                             <p>{`MINT ON MINTBAY`}</p>
                         </a>
