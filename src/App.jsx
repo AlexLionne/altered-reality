@@ -146,7 +146,7 @@ function App() {
                 </p>
                 <p style={{color: 'rgb(0, 133, 255)'}} className="pixel-font-2 mt-4 max-w-3xl mx-auto text-white/70 leading-relaxed">
                     It’s a symbol of migration, evolution,
-                    and survival. both in the Reef, and in the oceans we share 🩵
+                    and survival. both in the reef, and in the oceans we share 🩵
                 </p>
             </section>
 
@@ -165,7 +165,6 @@ function App() {
                             </div>
                         </div>
                     </div>
-
                     <div className={'mb-8 w-full max-w-[1639px]'}>
                         <GridBG tokens={tokens} onItemClick={(index) => setSelectedToken(tokens[index])}/>
                     </div>
@@ -179,7 +178,7 @@ function App() {
                                 Connect your wallet 🩵
                             </p>}
                         </div>}
-                        <div className={'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-10 gap-4 max-w-5xl mx-auto mb-8'}>
+                        <div className={'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-10 gap-4 max-w-5xl mb-8'}>
                             {myTokens.map((dataUri, i) => {
                                 if (!dataUri) return null;
                                 return <a onClick={() => setSelectedToken(dataUri)} key={i}>

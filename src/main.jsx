@@ -8,7 +8,7 @@ import { inject } from '@vercel/analytics';
 //
 import { createAppKit } from '@reown/appkit/react'
 import { WagmiProvider } from 'wagmi'
-import { baseSepolia } from '@reown/appkit/networks'
+import { base } from '@reown/appkit/networks'
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi'
 
 
@@ -24,7 +24,7 @@ const metadata = {
 }
 const projectId = import.meta.env.VITE_PROJECT_ID;
 
-const networks = [baseSepolia];
+const networks = [base];
 
 const wagmiAdapter = new WagmiAdapter({
     networks,

@@ -9,7 +9,7 @@ import {
     useSwitchChain,
     useConnect,
 } from "wagmi";
-import { baseSepolia } from "wagmi/chains";
+import { base } from "wagmi/chains";
 import {
     ABI, CONTRACT_ADDRESS, useSettings, useCollectorFee, useAllowlistMint, useCurrentPhase, useFreeMint, useMint,
     useGetMintStatus
@@ -39,15 +39,15 @@ function useEnsureBaseSepolia() {
     return async function ensure() {
         if (!isConnected) {
             const injected = connectors.find(c => c.id === "injected") ?? connectors[0];
-            await connectAsync({ connector: injected, chainId: baseSepolia.id }).catch(() => {});
+            await connectAsync({ connector: injected, chainId: base.id }).catch(() => {});
         }
         try {
-            if (chainId !== baseSepolia.id) {
-                await switchChainAsync({ chainId: baseSepolia.id });
+            if (chainId !== base.id) {
+                await switchChainAsync({ chainId: base.id });
             }
         } catch {
             await addBaseSepoliaManually();
-            await switchChainAsync({ chainId: baseSepolia.id });
+            await switchChainAsync({ chainId: base.id });
         }
     };
 }
@@ -87,7 +87,7 @@ export function Mint({ qty }) {
         functionName: "mint",
         args: [BigInt(Math.max(1, Number(qty) || 1))],
         value: totalValueWei,
-        chainId: baseSepolia.id,
+        chainId: base.id,
         query: { enabled: phaseNum === 2 && perNft > 0n }, // <- important
     });
 
@@ -112,7 +112,7 @@ export function Mint({ qty }) {
             functionName: "mint",
             args: [BigInt(Math.max(1, Number(qty) || 1))],
             value: totalValueWei,
-            chainId: baseSepolia.id,
+            chainId: base.id,
         });
     }
 
