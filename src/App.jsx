@@ -206,7 +206,6 @@ function App() {
                             <Minus size={24} strokeWidth={3} />
                         </a>
                     </div>*/}
-                    {/*<p className={'pixel-font-3 text-2xl text-white mb-8'}>max supply : 260 - {(floor * nbMint).toFixed(5)} ETH</p>*/}
                     <div
                         className={'w-full max-w-[1639px] flex flex-row items-center flex-1 justify-between text-center'}>
                         <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12 p-4">
